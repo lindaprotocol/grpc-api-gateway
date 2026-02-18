@@ -1,4 +1,4 @@
-module github.com/lindaprotocol/grpc-gateway
+module github.com/lindaprotocol/grpc-api-gateway
 
 go 1.23
 
