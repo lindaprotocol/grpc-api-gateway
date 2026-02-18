@@ -10,7 +10,7 @@ import (
     "strings"
     "time"
 
-    "github.com/lindaprotocol/grpc-api-gateway/pkg/api"
+    "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol"
     "github.com/lindaprotocol/grpc-api-gateway/internal/storage"
     "google.golang.org/grpc"
     "google.golang.org/protobuf/types/known/emptypb"
