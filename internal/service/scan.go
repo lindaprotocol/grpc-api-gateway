@@ -3,7 +3,7 @@ package service
 import (
     "context"
     
-    "github.com/lindaprotocol/grpc-gateway/pkg/api/protocol"
+    "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol"
     "google.golang.org/grpc"
     "gorm.io/gorm"
 )

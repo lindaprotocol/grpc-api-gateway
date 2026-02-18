@@ -4,7 +4,7 @@ import (
     "context"
     "time"
 
-    "github.com/lindaprotocol/grpc-gateway/api"
+    "github.com/lindaprotocol/grpc-api-gateway/pkg/api"
     "gorm.io/gorm"
 )
 
