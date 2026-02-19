@@ -1660,6 +1660,12 @@ message BlockLimitRequest {
   int64 endNum = 2;
 }
 
+message BlockRequest {
+  int64 num = 1;
+  bytes hash = 2;
+  bool detail = 3;
+}
+
 message LatestBlockRequest {
   int64 num = 1;
 }
@@ -1751,6 +1757,17 @@ message AddressValidateRequest {
 
 message UniqueIdRequest {
   bytes uniqueId = 1;
+}
+
+message ContractLogRequest {
+  int32 limit = 1;
+  string sort = 2;
+  int32 start = 3;
+  int64 block = 4;
+  string address = 5;
+  bytes transactionHash = 6;
+  bytes contractAddress = 7;
+  bytes uniqueId = 8;
 }
 
 message ParseContractLogRequest {
@@ -2038,6 +2055,28 @@ message TransactionReceipt {
   int64 netFee = 4;
   int64 netUsage = 5;
   Transaction.Result result = 6;
+}
+
+message TransactionInfo {
+  bytes id = 1;
+  int64 fee = 2;
+  int64 blockNumber = 3;
+  int64 blockTimeStamp = 4;
+  repeated bytes contractResult = 5;
+  bytes contractAddress = 6;
+  bytes receipt = 7;
+  int64 logCount = 8;
+  int64 result = 9;
+  int64 energyUsage = 10;
+  int64 energyFee = 11;
+  int64 energyUsageTotal = 12;
+  int64 netUsage = 13;
+  int64 netFee = 14;
+  
+  enum code {
+    SUCESS = 0;
+    FAILED = 1;
+  }
 }
 
 message TransactionInfoList {
