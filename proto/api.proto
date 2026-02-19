@@ -178,6 +178,8 @@ service Wallet {
       body: "*"
       additional_bindings {
         get: "/wallet/listnodes"
+      }
+      additional_bindings {
         get: "/net/listnodes"
       }
     };
@@ -203,12 +205,12 @@ service Wallet {
       };
   }
 
-  rpc GetAssetIssueByName (BytesMessage) returns (AssetIssueContract) {
+  rpc GetAssetIssueByName (AssetNameRequest) returns (AssetIssueContract) {
     option (google.api.http) = {
       post: "/wallet/getassetissuebyname"
       body: "*"
       additional_bindings {
-        get: "/wallet/getassetissuebyname"
+        get: "/wallet/getassetissuebyname/{name}"
       }
     };
   }
@@ -223,27 +225,27 @@ service Wallet {
     };
   }
 
-  rpc GetBlockByNum (NumberMessage) returns (Block) {
+  rpc GetBlockByNum (BlockNumberRequest) returns (Block) {
     option (google.api.http) = {
       post: "/wallet/getblockbynum"
       body: "*"
       additional_bindings {
-        get: "/wallet/getblockbynum"
+        get: "/wallet/getblockbynum/{num}"
       }
     };
   }
 
-  rpc GetBlockById (BytesMessage) returns (Block) {
+  rpc GetBlockById (BlockHashRequest) returns (Block) {
     option (google.api.http) = {
       post: "/wallet/getblockbyid"
       body: "*"
       additional_bindings {
-        get: "/wallet/getblockbyid"
+        get: "/wallet/getblockbyid/{hash}"
       }
     };
   }
 
-  rpc GetBlockByLimitNext (BlockLimit) returns (BlockList) {
+  rpc GetBlockByLimitNext (BlockLimitRequest) returns (BlockList) {
     option (google.api.http) = {
       post: "/wallet/getblockbylimitnext"
       body: "*"
@@ -253,22 +255,22 @@ service Wallet {
     };
   }
 
-  rpc GetBlockByLatestNum (NumberMessage) returns (BlockList) {
+  rpc GetBlockByLatestNum (LatestBlockRequest) returns (BlockList) {
     option (google.api.http) = {
       post: "/wallet/getblockbylatestnum"
       body: "*"
       additional_bindings {
-        get: "/wallet/getblockbylatestnum"
+        get: "/wallet/getblockbylatestnum/{num}"
       }
     };
   }
 
-  rpc GetTransactionById (BytesMessage) returns (Transaction) {
+  rpc GetTransactionById (TransactionHashRequest) returns (Transaction) {
     option (google.api.http) = {
       post: "/wallet/gettransactionbyid"
       body: "*"
       additional_bindings {
-        get: "/wallet/gettransactionbyid"
+        get: "/wallet/gettransactionbyid/{hash}"
       }
     };
   }
@@ -415,32 +417,32 @@ service WalletSolidity {
     };
   }
 
-  rpc GetBlockByNum (NumberMessage) returns (Block) {
+  rpc GetBlockByNum (BlockNumberRequest) returns (Block) {
     option (google.api.http) = {
       post: "/walletsolidity/getblockbynum"
       body: "*"
       additional_bindings {
-        get: "/walletsolidity/getblockbynum"
+        get: "/walletsolidity/getblockbynum/{num}"
       }
     };
   }
 
-  rpc GetTransactionById (BytesMessage) returns (Transaction) {
+  rpc GetTransactionById (TransactionHashRequest) returns (Transaction) {
     option (google.api.http) = {
       post: "/walletsolidity/gettransactionbyid"
       body: "*"
       additional_bindings {
-        get: "/walletsolidity/gettransactionbyid"
+        get: "/walletsolidity/gettransactionbyid/{hash}"
       }
     };
   }
 
-  rpc GetTransactionInfoById (BytesMessage) returns (TransactionInfo) {
+  rpc GetTransactionInfoById (TransactionHashRequest) returns (TransactionInfo) {
     option (google.api.http) = {
       post: "/walletsolidity/gettransactioninfobyid"
       body: "*"
       additional_bindings {
-        get: "/walletsolidity/gettransactioninfobyid"
+        get: "/walletsolidity/gettransactioninfobyid/{hash}"
       }
     };
   }
@@ -482,7 +484,7 @@ service Database {
   rpc getBlockReference (EmptyMessage) returns (BlockReference) {}
   rpc GetDynamicProperties (EmptyMessage) returns (DynamicProperties) {}
   rpc GetNowBlock (EmptyMessage) returns (Block) {}
-  rpc GetBlockByNum (NumberMessage) returns (Block) {}
+  rpc GetBlockByNum (BlockNumberRequest) returns (Block) {}
 }
 
 service Network {}
@@ -531,12 +533,12 @@ service ScanService {
   }
   
   // Account APIs
-  rpc GetAccountById (BytesMessage) returns (Account) {
+  rpc GetAccountById (AccountIdRequest) returns (Account) {
     option (google.api.http) = {
       post: "/wallet/getaccountbyid"
       body: "*"
       additional_bindings {
-        get: "/wallet/getaccountbyid"
+        get: "/wallet/getaccountbyid/{accountId}"
       }
     };
   }
@@ -572,14 +574,14 @@ service ScanService {
     };
   }
   
-  rpc GetDelegatedResourceAccountIndex (BytesMessage) returns (DelegatedResourceAccountIndex) {
+  rpc GetDelegatedResourceAccountIndex (AccountAddressRequest) returns (DelegatedResourceAccountIndex) {
     option (google.api.http) = {
       post: "/wallet/getdelegatedresourceaccountindex"
       body: "*"
     };
   }
   
-  rpc GetDelegatedResourceAccountIndexV2 (BytesMessage) returns (DelegatedResourceAccountIndex) {
+  rpc GetDelegatedResourceAccountIndexV2 (AccountAddressRequest) returns (DelegatedResourceAccountIndex) {
     option (google.api.http) = {
       post: "/wallet/getdelegatedresourceaccountindexv2"
       body: "*"
@@ -593,7 +595,7 @@ service ScanService {
     };
   }
   
-  rpc GetAvailableUnfreezeCount (AvailableUnfreezeCountRequest) returns (AvailableUnfreezeCountResponse) {
+  rpc GetAvailableUnfreezeCount (AccountAddressRequest) returns (AvailableUnfreezeCountResponse) {
     option (google.api.http) = {
       post: "/wallet/getavailableunfreezecount"
       body: "*"
@@ -607,20 +609,20 @@ service ScanService {
     };
   }
   
-  rpc GetReward (BytesMessage) returns (NumberMessage) {
+  rpc GetReward (AccountAddressRequest) returns (NumberMessage) {
     option (google.api.http) = {
-      get: "/wallet/getReward"
+      get: "/wallet/getReward/{address}"
     };
   }
   
-  rpc GetBrokerage (BytesMessage) returns (NumberMessage) {
+  rpc GetBrokerage (AccountAddressRequest) returns (NumberMessage) {
     option (google.api.http) = {
-      get: "/wallet/getBrokerage"
+      get: "/wallet/getBrokerage/{address}"
     };
   }
   
   // Block APIs
-  rpc GetBlock (BlockReq) returns (BlockExtention) {
+  rpc GetBlock (BlockRequest) returns (BlockExtention) {
     option (google.api.http) = {
       post: "/wallet/getblock"
       body: "*"
@@ -635,37 +637,37 @@ service ScanService {
   }
   
   // Transaction APIs
-  rpc GetTransactionInfoById (BytesMessage) returns (TransactionInfo) {
+  rpc GetTransactionInfoById (TransactionHashRequest) returns (TransactionInfo) {
     option (google.api.http) = {
       post: "/wallet/gettransactioninfobyid"
       body: "*"
       additional_bindings {
-        get: "/wallet/gettransactioninfobyid"
+        get: "/wallet/gettransactioninfobyid/{hash}"
       }
     };
   }
   
-  rpc GetTransactionReceiptById (BytesMessage) returns (TransactionReceipt) {
+  rpc GetTransactionReceiptById (TransactionHashRequest) returns (TransactionReceipt) {
     option (google.api.http) = {
       post: "/wallet/gettransactionreceiptbyid"
       body: "*"
       additional_bindings {
-        get: "/wallet/gettransactionreceiptbyid"
+        get: "/wallet/gettransactionreceiptbyid/{hash}"
       }
     };
   }
   
-  rpc GetTransactionCountByBlockNum (NumberMessage) returns (NumberMessage) {
+  rpc GetTransactionCountByBlockNum (BlockNumberRequest) returns (NumberMessage) {
     option (google.api.http) = {
       post: "/wallet/gettransactioncountbyblocknum"
       body: "*"
       additional_bindings {
-        get: "/wallet/gettransactioncountbyblocknum"
+        get: "/wallet/gettransactioncountbyblocknum/{num}"
       }
     };
   }
   
-  rpc GetTransactionInfoByBlockNum (NumberMessage) returns (TransactionInfoList) {
+  rpc GetTransactionInfoByBlockNum (BlockNumberRequest) returns (TransactionInfoList) {
     option (google.api.http) = {
       post: "/wallet/gettransactioninfobyblocknum"
       body: "*"
@@ -686,7 +688,7 @@ service ScanService {
     };
   }
   
-  rpc GetTransactionFromPending (BytesMessage) returns (Transaction) {
+  rpc GetTransactionFromPending (TransactionHashRequest) returns (Transaction) {
     option (google.api.http) = {
       post: "/wallet/gettransactionfrompending"
       body: "*"
@@ -714,7 +716,7 @@ service ScanService {
     };
   }
   
-  rpc GetProposalById (BytesMessage) returns (Proposal) {
+  rpc GetProposalById (ProposalIdRequest) returns (Proposal) {
     option (google.api.http) = {
       post: "/wallet/getproposalbyid"
       body: "*"
@@ -735,7 +737,7 @@ service ScanService {
     };
   }
   
-  rpc GetExchangeById (BytesMessage) returns (Exchange) {
+  rpc GetExchangeById (ExchangeIdRequest) returns (Exchange) {
     option (google.api.http) = {
       post: "/wallet/getexchangebyid"
       body: "*"
@@ -756,14 +758,14 @@ service ScanService {
     };
   }
   
-  rpc GetMarketOrderByAccount (BytesMessage) returns (MarketOrderList) {
+  rpc GetMarketOrderByAccount (AccountAddressRequest) returns (MarketOrderList) {
     option (google.api.http) = {
       post: "/wallet/getmarketorderbyaccount"
       body: "*"
     };
   }
   
-  rpc GetMarketOrderById (BytesMessage) returns (MarketOrder) {
+  rpc GetMarketOrderById (MarketOrderIdRequest) returns (MarketOrder) {
     option (google.api.http) = {
       post: "/wallet/getmarketorderbyid"
       body: "*"
@@ -785,14 +787,14 @@ service ScanService {
   }
   
   // Smart Contract APIs
-  rpc GetContract (BytesMessage) returns (SmartContract) {
+  rpc GetContract (ContractAddressRequest) returns (SmartContract) {
     option (google.api.http) = {
       post: "/wallet/getcontract"
       body: "*"
     };
   }
   
-  rpc GetContractInfo (BytesMessage) returns (SmartContract) {
+  rpc GetContractInfo (ContractAddressRequest) returns (SmartContract) {
     option (google.api.http) = {
       post: "/wallet/getcontractinfo"
       body: "*"
@@ -835,28 +837,28 @@ service ScanService {
   }
   
   // Shielded Transaction APIs
-  rpc GetExpandedSpendingKey (BytesMessage) returns (ExpandedSpendingKeyMessage) {
+  rpc GetExpandedSpendingKey (SpendingKeyRequest) returns (ExpandedSpendingKeyMessage) {
     option (google.api.http) = {
       post: "/wallet/getexpandedspendingkey"
       body: "*"
     };
   }
   
-  rpc GetAkFromAsk (BytesMessage) returns (BytesMessage) {
+  rpc GetAkFromAsk (SpendingKeyRequest) returns (BytesMessage) {
     option (google.api.http) = {
       post: "/wallet/getakfromask"
       body: "*"
     };
   }
   
-  rpc GetNkFromNsk (BytesMessage) returns (BytesMessage) {
+  rpc GetNkFromNsk (SpendingKeyRequest) returns (BytesMessage) {
     option (google.api.http) = {
       post: "/wallet/getnkfromnsk"
       body: "*"
     };
   }
   
-  rpc GetSpendingKey (BytesMessage) returns (BytesMessage) {
+  rpc GetSpendingKey (SpendingKeyRequest) returns (BytesMessage) {
     option (google.api.http) = {
       post: "/wallet/getspendingkey"
       body: "*"
@@ -877,7 +879,7 @@ service ScanService {
     };
   }
   
-  rpc GetIncomingViewingKey (BytesMessage) returns (IncomingViewingKeyMessage) {
+  rpc GetIncomingViewingKey (SpendingKeyRequest) returns (IncomingViewingKeyMessage) {
     option (google.api.http) = {
       post: "/wallet/getincomingviewingkey"
       body: "*"
@@ -905,21 +907,21 @@ service ScanService {
     };
   }
   
-  rpc ScanNoteByIvk (IvkMessage) returns (ShieldedNoteList) {
+  rpc ScanNoteByIvk (IvkScanRequest) returns (ShieldedNoteList) {
     option (google.api.http) = {
       post: "/wallet/scannotebyivk"
       body: "*"
     };
   }
   
-  rpc ScanAndMarkNoteByIvk (IvkMessage) returns (ShieldedNoteList) {
+  rpc ScanAndMarkNoteByIvk (IvkScanRequest) returns (ShieldedNoteList) {
     option (google.api.http) = {
       post: "/wallet/scanandmarknotebyivk"
       body: "*"
     };
   }
   
-  rpc ScanNoteByOvk (OvkMessage) returns (ShieldedNoteList) {
+  rpc ScanNoteByOvk (OvkScanRequest) returns (ShieldedNoteList) {
     option (google.api.http) = {
       post: "/wallet/scannotebyovk"
       body: "*"
@@ -990,14 +992,14 @@ service ScanService {
     };
   }
   
-  rpc ScanShieldedLRC20NotesByIvk (ScanShieldedLRC20Request) returns (ShieldedLRC20NoteList) {
+  rpc ScanShieldedLRC20NotesByIvk (ShieldedLRC20ScanRequest) returns (ShieldedLRC20NoteList) {
     option (google.api.http) = {
       post: "/wallet/scanshieldedlrc20notesbyivk"
       body: "*"
     };
   }
   
-  rpc ScanShieldedLRC20NotesByOvk (ScanShieldedLRC20Request) returns (ShieldedLRC20NoteList) {
+  rpc ScanShieldedLRC20NotesByOvk (ShieldedLRC20ScanRequest) returns (ShieldedLRC20NoteList) {
     option (google.api.http) = {
       post: "/wallet/scanshieldedlrc20notesbyovk"
       body: "*"
@@ -1081,14 +1083,14 @@ service ScanService {
     };
   }
   
-  rpc BroadcastHex (BytesMessage) returns (Return) {
+  rpc BroadcastHex (HexDataRequest) returns (Return) {
     option (google.api.http) = {
       post: "/wallet/broadcasthex"
       body: "*"
     };
   }
   
-  rpc ValidateAddress (BytesMessage) returns (AddressValidateResult) {
+  rpc ValidateAddress (AddressValidateRequest) returns (AddressValidateResult) {
     option (google.api.http) = {
       post: "/wallet/validateaddress"
       body: "*"
@@ -1212,13 +1214,13 @@ service ScanService {
   }
   
   // Block Query APIs
-  rpc GetBlocks (BlockRequest) returns (BlockListResponse) {
+  rpc GetBlocks (BlockQueryRequest) returns (BlockListResponse) {
     option (google.api.http) = {
       get: "/api/block"
     };
   }
   
-  rpc GetTransactions (TransactionRequest) returns (TransactionListResponse) {
+  rpc GetTransactions (TransactionQueryRequest) returns (TransactionListResponse) {
     option (google.api.http) = {
       get: "/api/transaction"
     };
@@ -1315,27 +1317,27 @@ service ScanService {
     };
   }
   
-  rpc GetEventsByTransactionId (BytesMessage) returns (EventList) {
+  rpc GetEventsByTransactionId (TransactionHashRequest) returns (EventList) {
     option (google.api.http) = {
-      get: "/events/transaction/{transactionId}"
+      get: "/events/transaction/{hash}"
     };
   }
   
-  rpc GetEventsByContractAddress (EventContractRequest) returns (EventList) {
+  rpc GetEventsByContractAddress (ContractAddressRequest) returns (EventList) {
     option (google.api.http) = {
-      get: "/events/{contractAddress}"
+      get: "/events/{address}"
     };
   }
   
   rpc GetEventsByContractAndName (EventNameRequest) returns (EventList) {
     option (google.api.http) = {
-      get: "/events/contract/{contractAddress}/{eventName}"
+      get: "/events/contract/{address}/{eventName}"
     };
   }
   
   rpc GetEventsByContractNameAndBlock (EventBlockRequest) returns (EventList) {
     option (google.api.http) = {
-      get: "/events/contract/{contractAddress}/{eventName}/{blockNumber}"
+      get: "/events/contract/{address}/{eventName}/{blockNumber}"
     };
   }
   
@@ -1351,7 +1353,7 @@ service ScanService {
     };
   }
   
-  rpc GetBlockByHash (BytesMessage) returns (Block) {
+  rpc GetBlockByHash (BlockHashRequest) returns (Block) {
     option (google.api.http) = {
       get: "/blocks/{hash}"
     };
@@ -1375,39 +1377,39 @@ service ScanService {
     };
   }
   
-  rpc GetContractLogsByTransaction (BytesMessage) returns (ContractLogList) {
+  rpc GetContractLogsByTransaction (TransactionHashRequest) returns (ContractLogList) {
     option (google.api.http) = {
-      get: "/contractlogs/transaction/{transactionId}"
+      get: "/contractlogs/transaction/{hash}"
     };
   }
   
-  rpc GetContractLogsByContract (BytesMessage) returns (ContractLogList) {
+  rpc GetContractLogsByContract (ContractAddressRequest) returns (ContractLogList) {
     option (google.api.http) = {
-      get: "/contractlogs/contract/{contractAddress}"
+      get: "/contractlogs/contract/{address}"
     };
   }
   
-  rpc GetContractLogsByUniqueId (BytesMessage) returns (ContractLogList) {
+  rpc GetContractLogsByUniqueId (UniqueIdRequest) returns (ContractLogList) {
     option (google.api.http) = {
       get: "/contractlogs/uniqueId/{uniqueId}"
     };
   }
   
-  rpc ParseContractLogsWithABI (ContractABIRequest) returns (ParsedContractLogList) {
+  rpc ParseContractLogsWithABI (ParseContractLogRequest) returns (ParsedContractLogList) {
     option (google.api.http) = {
       post: "/contract/transaction/{transactionId}"
       body: "*"
     };
   }
   
-  rpc ParseContractLogsByContractWithABI (ContractABIRequest) returns (ParsedContractLogList) {
+  rpc ParseContractLogsByContractWithABI (ParseContractLogRequest) returns (ParsedContractLogList) {
     option (google.api.http) = {
-      post: "/contract/contractAddress/{contractAddress}"
+      post: "/contract/contractAddress/{address}"
       body: "*"
     };
   }
   
-  rpc ParseContractLogsByUniqueIdWithABI (ContractABIRequest) returns (ParsedContractLogList) {
+  rpc ParseContractLogsByUniqueIdWithABI (ParseContractLogRequest) returns (ParsedContractLogList) {
     option (google.api.http) = {
       post: "/contract/uniqueId/{uniqueId}"
       body: "*"
@@ -1415,15 +1417,15 @@ service ScanService {
   }
   
   // Solidity Node Specific APIs (Read-Only)
-  rpc GetTransactionByIdSolidity (BytesMessage) returns (Transaction) {
+  rpc GetTransactionByIdSolidity (TransactionHashRequest) returns (Transaction) {
     option (google.api.http) = {
-      get: "/walletsolidity/gettransactionbyid"
+      get: "/walletsolidity/gettransactionbyid/{hash}"
     };
   }
   
-  rpc GetTransactionInfoByIdSolidity (BytesMessage) returns (TransactionInfo) {
+  rpc GetTransactionInfoByIdSolidity (TransactionHashRequest) returns (TransactionInfo) {
     option (google.api.http) = {
-      get: "/walletsolidity/gettransactioninfobyid"
+      get: "/walletsolidity/gettransactioninfobyid/{hash}"
     };
   }
   
@@ -1433,9 +1435,9 @@ service ScanService {
     };
   }
   
-  rpc GetBlockByNumSolidity (NumberMessage) returns (Block) {
+  rpc GetBlockByNumSolidity (BlockNumberRequest) returns (Block) {
     option (google.api.http) = {
-      get: "/walletsolidity/getblockbynum"
+      get: "/walletsolidity/getblockbynum/{num}"
     };
   }
   
@@ -1453,14 +1455,14 @@ service ScanService {
     };
   }
   
-  rpc GetDelegatedResourceAccountIndexSolidity (BytesMessage) returns (DelegatedResourceAccountIndex) {
+  rpc GetDelegatedResourceAccountIndexSolidity (AccountAddressRequest) returns (DelegatedResourceAccountIndex) {
     option (google.api.http) = {
       post: "/walletsolidity/getdelegatedresourceaccountindex"
       body: "*"
     };
   }
   
-  rpc GetDelegatedResourceAccountIndexV2Solidity (BytesMessage) returns (DelegatedResourceAccountIndex) {
+  rpc GetDelegatedResourceAccountIndexV2Solidity (AccountAddressRequest) returns (DelegatedResourceAccountIndex) {
     option (google.api.http) = {
       post: "/walletsolidity/getdelegatedresourceaccountindexv2"
       body: "*"
@@ -1486,7 +1488,7 @@ service ScanService {
     };
   }
   
-  rpc GetMarketOrderByAccountSolidity (BytesMessage) returns (MarketOrderList) {
+  rpc GetMarketOrderByAccountSolidity (AccountAddressRequest) returns (MarketOrderList) {
     option (google.api.http) = {
       post: "/walletsolidity/getmarketorderbyaccount"
       body: "*"
@@ -1508,7 +1510,7 @@ service ScanService {
   }
 }
 
-// ==================== Message Definitions ====================
+// ==================== Core Message Definitions ====================
 
 message Return {
   enum response_code {
@@ -1633,7 +1635,132 @@ message AddressPrKeyPairMessage {
   string privateKey = 2;
 }
 
-// ==================== Scan Service Message Definitions ====================
+// ==================== Semantic Request/Response Types ====================
+
+// Account related requests
+message AccountAddressRequest {
+  bytes address = 1;
+}
+
+message AccountIdRequest {
+  bytes accountId = 1;
+}
+
+// Block related requests
+message BlockNumberRequest {
+  int64 num = 1;
+}
+
+message BlockHashRequest {
+  bytes hash = 1;
+}
+
+message BlockLimitRequest {
+  int64 startNum = 1;
+  int64 endNum = 2;
+}
+
+message LatestBlockRequest {
+  int64 num = 1;
+}
+
+message BlockQueryRequest {
+  int32 limit = 1;
+  string sort = 2;
+  int32 start = 3;
+  int64 block = 4;
+  string hash = 5;
+  int64 number = 6;
+  string format = 7;
+}
+
+// Transaction related requests
+message TransactionHashRequest {
+  bytes hash = 1;
+}
+
+message TransactionQueryRequest {
+  string hash = 1;
+  string address = 2;
+  int64 blockNumber = 3;
+  int32 limit = 4;
+  int32 start = 5;
+  string sort = 6;
+}
+
+// Asset related requests
+message AssetNameRequest {
+  bytes name = 1;
+}
+
+// Contract related requests
+message ContractAddressRequest {
+  bytes address = 1;
+}
+
+// Proposal related requests
+message ProposalIdRequest {
+  bytes proposalId = 1;
+}
+
+// Exchange related requests
+message ExchangeIdRequest {
+  bytes exchangeId = 1;
+}
+
+// Market related requests
+message MarketOrderIdRequest {
+  bytes orderId = 1;
+}
+
+// Shielded transaction requests
+message SpendingKeyRequest {
+  bytes spendingKey = 1;
+}
+
+message IvkScanRequest {
+  bytes ivk = 1;
+  int64 start = 2;
+  int64 end = 3;
+}
+
+message OvkScanRequest {
+  bytes ovk = 1;
+  int64 start = 2;
+  int64 end = 3;
+}
+
+message ShieldedLRC20ScanRequest {
+  bytes ak = 1;
+  bytes nk = 2;
+  bytes ivk = 3;
+  bytes ovk = 4;
+  int64 start = 5;
+  int64 end = 6;
+  bytes contractAddress = 7;
+}
+
+// Other requests
+message HexDataRequest {
+  bytes data = 1;
+}
+
+message AddressValidateRequest {
+  bytes address = 1;
+}
+
+message UniqueIdRequest {
+  bytes uniqueId = 1;
+}
+
+message ParseContractLogRequest {
+  string transactionId = 1;
+  string address = 2;
+  string uniqueId = 3;
+  string abi = 4;
+}
+
+// ==================== Keep all your existing message definitions below ====================
 
 // Chain Parameters
 message ChainParameters {
@@ -1825,10 +1952,6 @@ message CanDelegatedMaxSizeResponse {
   int64 maxSize = 1;
 }
 
-message AvailableUnfreezeCountRequest {
-  bytes ownerAddress = 1;
-}
-
 message AvailableUnfreezeCountResponse {
   int64 count = 1;
 }
@@ -1855,13 +1978,24 @@ message BlockExtention {
   bytes blockid = 3;
 }
 
+message Log {
+  bytes address = 1;
+  repeated bytes topics = 2;
+  bytes data = 3;
+  int64 blockNumber = 4;
+  bytes transactionHash = 5;
+  int64 transactionIndex = 6;
+  int64 logIndex = 7;
+  bool removed = 8;
+}
+
 message TransactionExtention {
   Transaction transaction = 1;
   repeated bytes txid = 2;
   bytes constantResult = 3;
   Return result = 4;
   int64 energyUsed = 5;
-  repeated TransactionInfo.Logs logs = 6;
+  repeated Log logs = 6;
   repeated InternalTransaction internalTransactions = 7;
 }
 
@@ -2125,18 +2259,6 @@ message ShieldReceive {
   bytes cOut = 8;
 }
 
-message IvkMessage {
-  bytes ivk = 1;
-  int64 start = 2;
-  int64 end = 3;
-}
-
-message OvkMessage {
-  bytes ovk = 1;
-  int64 start = 2;
-  int64 end = 3;
-}
-
 message ShieldedNoteList {
   repeated ShieldNote notes = 1;
 }
@@ -2198,16 +2320,6 @@ message ShieldedContractParametersRequest {
 message ShieldedContractParameters {
   repeated bytes triggerInputs = 1;
   repeated ShieldNote notes = 2;
-}
-
-message ScanShieldedLRC20Request {
-  bytes ak = 1;
-  bytes nk = 2;
-  bytes ivk = 3;
-  bytes ovk = 4;
-  int64 start = 5;
-  int64 end = 6;
-  bytes contractAddress = 7;
 }
 
 message ShieldedLRC20NoteList {
@@ -2592,34 +2704,15 @@ message Tag {
 }
 
 // Block Query Messages
-message BlockRequest {
-  int64 number = 1;
-  string hash = 2;
-  int32 limit = 3;
-  int32 start = 4;
-  string sort = 5;
-  string format = 6;
-}
-
 message BlockListResponse {
   repeated Block blocks = 1;
   int64 total = 2;
-}
-
-message TransactionRequest {
-  string hash = 1;
-  string address = 2;
-  int64 blockNumber = 3;
-  int32 limit = 4;
-  int32 start = 5;
-  string sort = 6;
 }
 
 message TransactionListResponse {
   repeated TransactionInfo transactions = 1;
   int64 total = 2;
 }
-
 
 message InternalTransactionRequest {
   string hash = 1;
@@ -2838,7 +2931,7 @@ message Event {
 }
 
 message EventContractRequest {
-  string contractAddress = 1;
+  string address = 1;
   int32 limit = 2;
   string sort = 3;
   int32 start = 4;
@@ -2847,7 +2940,7 @@ message EventContractRequest {
 }
 
 message EventNameRequest {
-  string contractAddress = 1;
+  string address = 1;
   string eventName = 2;
   int32 limit = 3;
   string sort = 4;
@@ -2856,7 +2949,7 @@ message EventNameRequest {
 }
 
 message EventBlockRequest {
-  string contractAddress = 1;
+  string address = 1;
   string eventName = 2;
   int64 blockNumber = 3;
 }
@@ -2867,20 +2960,6 @@ message EventTimeRequest {
   string sort = 3;
   int32 start = 4;
   string contract = 5;
-}
-
-message BlockQueryRequest {
-  int32 limit = 1;
-  string sort = 2;
-  int32 start = 3;
-  int64 block = 4;
-}
-
-message ContractLogRequest {
-  int32 limit = 1;
-  string sort = 2;
-  int32 start = 3;
-  int64 block = 4;
 }
 
 message ContractLogList {
@@ -2898,13 +2977,6 @@ message ContractLog {
   repeated string topics = 7;
   string transactionHash = 8;
   int64 transactionIndex = 9;
-}
-
-message ContractABIRequest {
-  string transactionId = 1;
-  string contractAddress = 2;
-  string uniqueId = 3;
-  string abi = 4;
 }
 
 message ParsedContractLogList {
