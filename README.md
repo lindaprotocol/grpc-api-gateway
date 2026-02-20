@@ -41,7 +41,7 @@ make build
 make run
 
 # Test API of linda http
-curl -X POST -k http://localhost:8086/wallet/listwitnesses
+curl -X POST -k http://localhost:18890/wallet/listwitnesses
 ```
 If you get witness-list json data, congratulations
 
