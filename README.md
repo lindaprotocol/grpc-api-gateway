@@ -36,6 +36,9 @@ make proto
 # Build the gateway
 make build
 
+# Run
+make run
+
 # Test API of linda http
 curl -X POST -k http://localhost:8086/wallet/listwitnesses
 ```
