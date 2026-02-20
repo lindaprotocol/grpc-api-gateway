@@ -23,8 +23,8 @@ profile.cov
 # vendor/
 third_party/           # Downloaded during build
 vendor/                # If using vendoring
-*.pb.go
-*.pb.gw.go
+# *.pb.go
+# *.pb.gw.go
 
 # Go workspace file
 go.work
