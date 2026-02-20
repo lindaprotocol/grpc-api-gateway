@@ -2074,7 +2074,7 @@ message TransactionInfo {
   int64 netFee = 14;
   
   enum code {
-    SUCESS = 0;
+    SUCCESS = 0;
     FAILED = 1;
   }
 }
