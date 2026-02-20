@@ -61,3 +61,15 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Proto generation complete!"
+
+# Run go mod tidy to update dependencies
+echo "Running go mod tidy to update dependencies..."
+cd ${PROJECT_ROOT}
+go mod tidy
+
+if [ $? -ne 0 ]; then
+    echo "Warning: go mod tidy encountered issues, but proto generation succeeded"
+    exit 0  # Exit with success since proto generation worked
+fi
+
+echo "All tasks completed successfully!"
