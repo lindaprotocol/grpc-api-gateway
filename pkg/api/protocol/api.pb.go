@@ -14,7 +14,7 @@ import (
 	sync "sync"
 	unsafe "unsafe"
 
-	core "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol/core"
+	core "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
