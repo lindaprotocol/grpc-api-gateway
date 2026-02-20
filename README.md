@@ -26,6 +26,7 @@ A high-performance gRPC to HTTP/JSON gateway for the Linda blockchain. This serv
 # Clone the repository
 git clone https://github.com/lindaprotocol/grpc-api-gateway.git
 cd grpc-api-gateway
+chmod +x scripts/gen-proto.sh
 
 # Install dependencies
 make deps
