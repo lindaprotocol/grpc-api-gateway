@@ -148,6 +148,16 @@ func processJSON(obj interface{}) interface{} {
     case map[string]interface{}:
         result := make(map[string]interface{})
         for key, val := range v {
+            // Special handling for witnessAddress in genesis block
+            if key == "witnessAddress" {
+                if str, ok := val.(string); ok && len(str) > 100 {
+                    // This is likely the genesis witness address - it's not a standard address
+                    // Just return as is (it's a special case)
+                    result[key] = str
+                    continue
+                }
+            }
+            
             // Handle signature array specially
             if key == "signature" {
                 // Check if it's an array of signatures
@@ -170,10 +180,26 @@ func processJSON(obj interface{}) interface{} {
                 }
             }
             
+            // Handle contract parameter specially for genesis block
+            if key == "parameter" {
+                // Check if this is a genesis block transaction (has raw hex data)
+                if paramMap, ok := val.(map[string]interface{}); ok {
+                    // Check if there's a value field that contains hex data
+                    if value, ok := paramMap["value"]; ok {
+                        if valueStr, ok := value.(string); ok && strings.Contains(valueStr, "0x") {
+                            // This is the raw hex data from genesis block
+                            // Keep it as is (don't decode)
+                            result[key] = paramMap
+                            continue
+                        }
+                    }
+                }
+            }
+            
             // Handle string values that need conversion
             if str, ok := val.(string); ok && len(str) > 0 {
-                // Check if this is an address field
-                if isAddressField(key) {
+                // Check if this is an address field (but not the genesis witness address)
+                if isAddressField(key) && len(str) < 100 {
                     // Decode from base64 to bytes, then encode as base58check
                     if bytes, err := decodeBase64String(str); err == nil {
                         result[key] = encodeBase58Check(bytes)
