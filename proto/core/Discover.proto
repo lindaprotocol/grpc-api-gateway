@@ -2,16 +2,11 @@ syntax = "proto3";
 
 package protocol;
 
+option java_package = "org.linda.protos";
+option java_outer_classname = "Discover";
+option go_package = "github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb";
 
-option java_package = "org.linda.protos"; //Specify the name of the package that generated the Java file
-option java_outer_classname = "Discover"; //Specify the class name of the generated Java file
-option go_package = "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol";
-
-message Endpoint {
-  bytes address = 1;
-  int32 port = 2;
-  bytes nodeId = 3;
-}
+import "core/Linda.proto";
 
 message PingMessage {
   Endpoint from = 1;

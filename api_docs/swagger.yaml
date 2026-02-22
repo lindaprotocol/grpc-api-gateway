@@ -1,0 +1,758 @@
+openapi: 3.0.0
+info:
+  title: LindaGrid API Gateway
+  description: API Gateway for Linda Blockchain
+  version: 1.0.0
+  contact:
+    name: Linda Protocol
+    url: https://lindacoin.org
+  license:
+    name: GPL-3.0
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+
+servers:
+  - url: https://api.lindagrid.lindacoin.org
+    description: Mainnet
+  - url: https://testnet-api.lindagrid.lindacoin.org
+    description: Testnet
+
+tags:
+  - name: Accounts
+    description: Account operations
+  - name: Transactions
+    description: Transaction operations
+  - name: Blocks
+    description: Block operations
+  - name: Tokens
+    description: Token operations (LRC-10 & LRC20)
+  - name: Smart Contracts
+    description: Smart contract operations
+  - name: Nodes
+    description: Node information
+  - name: Witnesses
+    description: Super Representative operations
+  - name: Proposals
+    description: Chain proposal operations
+  - name: Exchanges
+    description: Exchange operations
+  - name: Market
+    description: DEX market operations
+  - name: Events
+    description: Event query service
+  - name: Lindascan
+    description: Lindascan custom APIs
+  - name: External
+    description: External integrations (tags, uploads)
+
+paths:
+  # ==================== Account APIs ====================
+  /wallet/getaccount:
+    post:
+      tags: [Accounts]
+      summary: Get account information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: string
+                  example: "TJRabPrwbZy45sbavfcjinPJC18kjpRTv8"
+                visible:
+                  type: boolean
+                  default: false
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Account'
+
+  /wallet/getaccountbalance:
+    post:
+      tags: [Accounts]
+      summary: Get account balance at specific block
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                account_identifier:
+                  type: object
+                  properties:
+                    address:
+                      type: string
+                block_identifier:
+                  type: object
+                  properties:
+                    hash:
+                      type: string
+                    number:
+                      type: integer
+                visible:
+                  type: boolean
+      responses:
+        '200':
+          description: Successful response
+
+  # ==================== Transaction APIs ====================
+  /wallet/createtransaction:
+    post:
+      tags: [Transactions]
+      summary: Create a LIND transfer transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                owner_address:
+                  type: string
+                to_address:
+                  type: string
+                amount:
+                  type: integer
+                visible:
+                  type: boolean
+      responses:
+        '200':
+          description: Unsigned transaction
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+
+  /wallet/broadcasttransaction:
+    post:
+      tags: [Transactions]
+      summary: Broadcast a signed transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Transaction'
+      responses:
+        '200':
+          description: Broadcast result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: boolean
+                  txid:
+                    type: string
+                  code:
+                    type: string
+                  message:
+                    type: string
+
+  # ==================== Block APIs ====================
+  /wallet/getnowblock:
+    get:
+      tags: [Blocks]
+      summary: Get the most recent block
+      parameters:
+        - name: visible
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Latest block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+
+  /wallet/getblockbynum:
+    post:
+      tags: [Blocks]
+      summary: Get block by number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                num:
+                  type: integer
+                visible:
+                  type: boolean
+      responses:
+        '200':
+          description: Block
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+
+  # ==================== Token APIs ====================
+  /wallet/getassetissuelist:
+    get:
+      tags: [Tokens]
+      summary: Get all LRC-10 tokens
+      parameters:
+        - name: visible
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of LRC-10 tokens
+
+  /api/token_lrc20:
+    get:
+      tags: [Tokens, Lindascan]
+      summary: Get LRC20 tokens
+      parameters:
+        - name: contract
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: start
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: "-issue_time"
+      responses:
+        '200':
+          description: List of LRC20 tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tokens:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LRC20Token'
+                  total:
+                    type: integer
+
+  # ==================== Smart Contract APIs ====================
+  /wallet/triggersmartcontract:
+    post:
+      tags: [Smart Contracts]
+      summary: Trigger a smart contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                owner_address:
+                  type: string
+                contract_address:
+                  type: string
+                function_selector:
+                  type: string
+                parameter:
+                  type: string
+                fee_limit:
+                  type: integer
+                call_value:
+                  type: integer
+                visible:
+                  type: boolean
+      responses:
+        '200':
+          description: Transaction extension
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionExtention'
+
+  # ==================== Node APIs ====================
+  /wallet/listnodes:
+    get:
+      tags: [Nodes]
+      summary: List connected nodes
+      responses:
+        '200':
+          description: List of nodes
+
+  /wallet/getnodeinfo:
+    get:
+      tags: [Nodes]
+      summary: Get node information
+      responses:
+        '200':
+          description: Node information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NodeInfo'
+
+  # ==================== Witness APIs ====================
+  /wallet/listwitnesses:
+    get:
+      tags: [Witnesses]
+      summary: List all witnesses
+      parameters:
+        - name: visible
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of witnesses
+
+  # ==================== Event Query APIs ====================
+  /v1/transactions:
+    get:
+      tags: [Events]
+      summary: Get transaction list
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: start
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: "-timestamp"
+        - name: block
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/V1Response'
+
+  /v1/events:
+    get:
+      tags: [Events]
+      summary: Get events list
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: start
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: sort
+          in: query
+          schema:
+            type: string
+            default: "-timestamp"
+        - name: since
+          in: query
+          schema:
+            type: integer
+        - name: block
+          in: query
+          schema:
+            type: integer
+        - name: contract
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of events
+
+  # ==================== Lindascan Custom APIs ====================
+  /api/system/homepage-bundle:
+    get:
+      tags: [Lindascan]
+      summary: Get homepage bundle data
+      responses:
+        '200':
+          description: Homepage data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomepageBundle'
+
+  /api/nodemap:
+    get:
+      tags: [Lindascan]
+      summary: Get node map data
+      responses:
+        '200':
+          description: Node map with geolocation
+
+  /api/search:
+    get:
+      tags: [Lindascan]
+      summary: Search blockchain
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [block, transaction, address, token]
+      responses:
+        '200':
+          description: Search results
+
+  # ==================== External APIs ====================
+  /external/tag:
+    get:
+      tags: [External]
+      summary: Get tags
+      parameters:
+        - name: address
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: start
+          in: query
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: List of tags
+
+  /external/tag/insert:
+    post:
+      tags: [External]
+      summary: Insert a tag
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                address:
+                  type: string
+                tag:
+                  type: string
+                description:
+                  type: string
+                owner:
+                  type: string
+                signature:
+                  type: string
+      responses:
+        '200':
+          description: Tag insert result
+
+components:
+  schemas:
+    Account:
+      type: object
+      properties:
+        address:
+          type: string
+        balance:
+          type: integer
+        account_name:
+          type: string
+        create_time:
+          type: integer
+        is_witness:
+          type: boolean
+        allowance:
+          type: integer
+        latest_withdraw_time:
+          type: integer
+        latest_opration_time:
+          type: integer
+        frozen:
+          type: array
+          items:
+            type: object
+            properties:
+              frozen_balance:
+                type: integer
+              expire_time:
+                type: integer
+        frozenV2:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: integer
+              type:
+                type: string
+        votes:
+          type: array
+          items:
+            type: object
+            properties:
+              vote_address:
+                type: string
+              vote_count:
+                type: integer
+
+    Transaction:
+      type: object
+      properties:
+        txID:
+          type: string
+        raw_data_hex:
+          type: string
+        signature:
+          type: array
+          items:
+            type: string
+        ret:
+          type: array
+          items:
+            type: object
+            properties:
+              contractRet:
+                type: string
+              fee:
+                type: integer
+        raw_data:
+          type: object
+          properties:
+            contract:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  parameter:
+                    type: object
+            ref_block_bytes:
+              type: string
+            ref_block_num:
+              type: integer
+            ref_block_hash:
+              type: string
+            expiration:
+              type: integer
+            timestamp:
+              type: integer
+
+    Block:
+      type: object
+      properties:
+        blockID:
+          type: string
+        block_header:
+          type: object
+          properties:
+            raw_data:
+              type: object
+              properties:
+                timestamp:
+                  type: integer
+                txTrieRoot:
+                  type: string
+                parentHash:
+                  type: string
+                number:
+                  type: integer
+                witness_id:
+                  type: integer
+                witness_address:
+                  type: string
+                version:
+                  type: integer
+            witness_signature:
+              type: string
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+    LRC20Token:
+      type: object
+      properties:
+        contract:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        decimals:
+          type: integer
+        total_supply:
+          type: string
+        owner:
+          type: string
+        issue_time:
+          type: integer
+        holders:
+          type: integer
+        transfers:
+          type: integer
+
+    NodeInfo:
+      type: object
+      properties:
+        beginSyncNum:
+          type: integer
+        block:
+          type: string
+        solidityBlock:
+          type: string
+        currentConnectCount:
+          type: integer
+        activeConnectCount:
+          type: integer
+        passiveConnectCount:
+          type: integer
+        totalFlow:
+          type: integer
+        peerInfoList:
+          type: array
+        configNodeInfo:
+          type: object
+        machineInfo:
+          type: object
+
+    TransactionExtention:
+      type: object
+      properties:
+        transaction:
+          $ref: '#/components/schemas/Transaction'
+        txid:
+          type: string
+        result:
+          type: object
+          properties:
+            result:
+              type: boolean
+            code:
+              type: integer
+            message:
+              type: string
+
+    V1Response:
+      type: object
+      properties:
+        data:
+          type: array
+        success:
+          type: boolean
+        meta:
+          type: object
+          properties:
+            at:
+              type: integer
+            page_size:
+              type: integer
+            fingerprint:
+              type: string
+            links:
+              type: object
+              properties:
+                next:
+                  type: string
+
+    HomepageBundle:
+      type: object
+      properties:
+        totalBlocks:
+          type: integer
+        totalTransactions:
+          type: integer
+        totalAccounts:
+          type: integer
+        totalContracts:
+          type: integer
+        totalTokens:
+          type: integer
+        priceUSD:
+          type: integer
+        marketCap:
+          type: integer
+        volume24h:
+          type: integer
+        recentBlocks:
+          type: array
+          items:
+            $ref: '#/components/schemas/Block'
+        recentTransactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+        address:
+          type: string
+        tag:
+          type: string
+        description:
+          type: string
+        owner:
+          type: string
+        createdAt:
+          type: integer
+        votes:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: "Error message"
+
+  securitySchemes:
+    APIKeyAuth:
+      type: apiKey
+      in: header
+      name: LINDA-PRO-API-KEY
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - APIKeyAuth: []
+  - BearerAuth: []

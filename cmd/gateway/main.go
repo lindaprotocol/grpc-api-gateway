@@ -1,332 +1,176 @@
 package main
 
 import (
-    "bytes"
-    "context"
-    "crypto/sha256"
-    "encoding/base64"
-    "encoding/hex"
-    "encoding/json"
-    "flag"
-    "math/big"
-    "net/http"
-    "strings"
+	"context"
+	"flag"
+	"net/http"
+	"time"
 
-    "github.com/golang/glog"
-    "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-    "google.golang.org/grpc"
-    "google.golang.org/grpc/credentials/insecure"
-    
-    "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"google.golang.org/protobuf/encoding/protojson"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/api/middleware"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/config"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/services/auth"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/services/blockchain"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/services/cache"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/services/storage/postgres"
+	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
+	"github.com/rs/cors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 )
 
 var (
-    grpcServerEndpoint = flag.String("grpc-server-endpoint", "localhost:50051", "gRPC server endpoint")
-    httpPort           = flag.String("http-port", ":18890", "HTTP port")
+	configPath = flag.String("config", "./internal/config/config.yaml", "configuration file path")
 )
 
-// Base58 alphabet (Bitcoin/Linda style)
-const base58Alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-
-// encodeBase58Check converts bytes to base58check string (with version byte and checksum)
-func encodeBase58Check(input []byte) string {
-    if len(input) == 0 {
-        return ""
-    }
-
-    // Calculate checksum (first 4 bytes of double SHA256)
-    firstSHA := sha256.Sum256(input)
-    secondSHA := sha256.Sum256(firstSHA[:])
-    checksum := secondSHA[:4]
-
-    // Append checksum to input
-    payload := append(input, checksum...)
-
-    // Count leading zeros
-    zeros := 0
-    for zeros < len(payload) && payload[zeros] == 0 {
-        zeros++
-    }
-
-    // Convert to big integer
-    num := new(big.Int).SetBytes(payload)
-
-    // Convert to base58
-    result := make([]byte, 0)
-    base := big.NewInt(58)
-    zero := big.NewInt(0)
-    rem := new(big.Int)
-
-    for num.Cmp(zero) > 0 {
-        num.DivMod(num, base, rem)
-        result = append([]byte{base58Alphabet[rem.Int64()]}, result...)
-    }
-
-    // Add leading zeros as '1's
-    for i := 0; i < zeros; i++ {
-        result = append([]byte{base58Alphabet[0]}, result...)
-    }
-
-    return string(result)
-}
-
-// hexEncodeBytes converts bytes to hex string
-func hexEncodeBytes(data []byte) string {
-    if data == nil || len(data) == 0 {
-        return ""
-    }
-    return hex.EncodeToString(data)
-}
-
-// responseWriter captures the response for modification
-type responseWriter struct {
-    http.ResponseWriter
-    body       *bytes.Buffer
-    statusCode int
-}
-
-func (w *responseWriter) Write(b []byte) (int, error) {
-    return w.body.Write(b)
-}
-
-func (w *responseWriter) WriteHeader(statusCode int) {
-    w.statusCode = statusCode
-}
-
-// isAddressField checks if a field name indicates it contains an address
-func isAddressField(key string) bool {
-    keyLower := strings.ToLower(key)
-    return strings.Contains(keyLower, "address") || 
-           keyLower == "witness" ||
-           keyLower == "owneraddress" ||
-           keyLower == "toaddress" ||
-           keyLower == "fromaddress"
-}
-
-// needsHexConversion checks if a field should be converted to hex
-func needsHexConversion(key string) bool {
-    keyLower := strings.ToLower(key)
-    
-    // Fields that should be hex
-    hexFields := []string{
-        "parenthash", "txtrieroot", "witnesssignature", "signature",
-        "refblockbytes", "refblockhash", "txid", "blockid", "hash",
-        "data", "script", "proof", "merkle",
-    }
-    
-    for _, field := range hexFields {
-        if strings.Contains(keyLower, field) {
-            return true
-        }
-    }
-    return false
-}
-
-// decodeBase64String attempts to decode a string from various base64 formats
-func decodeBase64String(s string) ([]byte, error) {
-    // Try standard base64
-    bytes, err := base64.StdEncoding.DecodeString(s)
-    if err == nil {
-        return bytes, nil
-    }
-    // Try URL-safe base64
-    bytes, err = base64.URLEncoding.DecodeString(s)
-    if err == nil {
-        return bytes, nil
-    }
-    // Try raw base64 (without padding)
-    bytes, err = base64.RawStdEncoding.DecodeString(s)
-    if err == nil {
-        return bytes, nil
-    }
-    return nil, err
-}
-
-// processJSON recursively processes JSON to convert bytes appropriately
-func processJSON(obj interface{}) interface{} {
-    switch v := obj.(type) {
-    case map[string]interface{}:
-        result := make(map[string]interface{})
-        for key, val := range v {
-            // Special handling for witnessAddress in genesis block
-            if key == "witnessAddress" {
-                if str, ok := val.(string); ok && len(str) > 100 {
-                    // This is likely the genesis witness address - it's not a standard address
-                    // Just return as is (it's a special case)
-                    result[key] = str
-                    continue
-                }
-            }
-            
-            // Handle signature array specially
-            if key == "signature" {
-                // Check if it's an array of signatures
-                if sigArray, ok := val.([]interface{}); ok {
-                    convertedSigs := make([]interface{}, len(sigArray))
-                    for i, sig := range sigArray {
-                        if sigStr, ok := sig.(string); ok {
-                            // Decode base64 to bytes, then encode as hex
-                            if bytes, err := decodeBase64String(sigStr); err == nil {
-                                convertedSigs[i] = hexEncodeBytes(bytes)
-                            } else {
-                                convertedSigs[i] = sig
-                            }
-                        } else {
-                            convertedSigs[i] = processJSON(sig)
-                        }
-                    }
-                    result[key] = convertedSigs
-                    continue
-                }
-            }
-            
-            // Handle contract parameter specially for genesis block
-            if key == "parameter" {
-                // Check if this is a genesis block transaction (has raw hex data)
-                if paramMap, ok := val.(map[string]interface{}); ok {
-                    // Check if there's a value field that contains hex data
-                    if value, ok := paramMap["value"]; ok {
-                        if valueStr, ok := value.(string); ok && strings.Contains(valueStr, "0x") {
-                            // This is the raw hex data from genesis block
-                            // Keep it as is (don't decode)
-                            result[key] = paramMap
-                            continue
-                        }
-                    }
-                }
-            }
-            
-            // Handle string values that need conversion
-            if str, ok := val.(string); ok && len(str) > 0 {
-                // Check if this is an address field (but not the genesis witness address)
-                if isAddressField(key) && len(str) < 100 {
-                    // Decode from base64 to bytes, then encode as base58check
-                    if bytes, err := decodeBase64String(str); err == nil {
-                        result[key] = encodeBase58Check(bytes)
-                    } else {
-                        result[key] = val
-                    }
-                
-                // Check if this needs hex conversion
-                } else if needsHexConversion(key) {
-                    // Decode from base64 to bytes, then encode as hex
-                    if bytes, err := decodeBase64String(str); err == nil {
-                        result[key] = hexEncodeBytes(bytes)
-                    } else {
-                        result[key] = val
-                    }
-                
-                // Handle all other fields
-                } else {
-                    result[key] = val
-                }
-            } else {
-                // Recursively process non-string values
-                result[key] = processJSON(val)
-            }
-        }
-        return result
-        
-    case []interface{}:
-        result := make([]interface{}, len(v))
-        for i, val := range v {
-            result[i] = processJSON(val)
-        }
-        return result
-        
-    default:
-        return v
-    }
-}
-
-// responseInterceptor intercepts and modifies responses
-func responseInterceptor(h http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        // Create a custom response writer
-        rw := &responseWriter{
-            ResponseWriter: w,
-            body:           &bytes.Buffer{},
-            statusCode:     http.StatusOK,
-        }
-
-        // Serve the request
-        h.ServeHTTP(rw, r)
-
-        // Parse and modify the response if it's JSON
-        contentType := rw.Header().Get("Content-Type")
-        if strings.Contains(contentType, "application/json") || rw.body.Len() > 0 {
-            var data interface{}
-            if err := json.Unmarshal(rw.body.Bytes(), &data); err == nil {
-                // Process the JSON
-                processed := processJSON(data)
-                
-                // Marshal back with indentation
-                if modified, err := json.MarshalIndent(processed, "", "  "); err == nil {
-                    w.Header().Set("Content-Type", "application/json")
-                    w.WriteHeader(rw.statusCode)
-                    w.Write(modified)
-                    return
-                }
-            }
-        }
-
-        // If anything fails, write the original response
-        w.Header().Set("Content-Type", rw.Header().Get("Content-Type"))
-        w.WriteHeader(rw.statusCode)
-        w.Write(rw.body.Bytes())
-    })
-}
-
-func corsMiddleware(h http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Header().Set("Access-Control-Allow-Origin", "*")
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-        
-        if r.Method == "OPTIONS" {
-            w.WriteHeader(http.StatusOK)
-            return
-        }
-        
-        h.ServeHTTP(w, r)
-    })
-}
-
-func run() error {
-    ctx := context.Background()
-    ctx, cancel := context.WithCancel(ctx)
-    defer cancel()
-
-    mux := runtime.NewServeMux()
-    opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
-
-    // Register all services
-    services := []func(context.Context, *runtime.ServeMux, string, []grpc.DialOption) error{
-        protocol.RegisterWalletHandlerFromEndpoint,
-        protocol.RegisterWalletSolidityHandlerFromEndpoint,
-        protocol.RegisterWalletExtensionHandlerFromEndpoint,
-        protocol.RegisterScanServiceHandlerFromEndpoint,
-    }
-
-    for _, register := range services {
-        if err := register(ctx, mux, *grpcServerEndpoint, opts); err != nil {
-            return err
-        }
-    }
-
-    // Wrap with CORS and response interceptor
-    handler := corsMiddleware(mux)
-    handler = responseInterceptor(handler)
-
-    glog.Infof("HTTP server listening on %s", *httpPort)
-    return http.ListenAndServe(*httpPort, handler)
-}
-
 func main() {
-    flag.Parse()
-    defer glog.Flush()
+	flag.Parse()
 
-    if err := run(); err != nil {
-        glog.Fatal(err)
-    }
+	// Load configuration
+	cfg, err := config.Load(*configPath)
+	if err != nil {
+		panic(err)
+	}
+
+	// Initialize tracer if enabled
+	if cfg.Tracing.Enabled {
+		tracer.Start(
+			tracer.WithServiceName("grpc-api-gateway"),
+			tracer.WithEnv(cfg.Environment),
+		)
+		defer tracer.Stop()
+	}
+
+	// Initialize database
+	db, err := postgres.NewConnection(cfg.Database)
+	if err != nil {
+		panic(err)
+	}
+
+	// Initialize Redis cache
+	redisCache, err := cache.NewRedisClientFromConfig(cfg.Redis)
+	if err != nil {
+		panic(err)
+	}
+
+	// Initialize auth service
+	authService := auth.NewService(cfg.Auth, db, redisCache)
+
+	// Create gRPC connection to blockchain nodes
+	conn, err := grpc.Dial(
+		cfg.Linda.FullnodeEndpoint,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(32*1024*1024)),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer conn.Close()
+
+	solidityConn, err := grpc.Dial(
+		cfg.Linda.SolidityEndpoint,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(32*1024*1024)),
+	)
+	if err != nil {
+		panic(err)
+	}
+	defer solidityConn.Close()
+
+	// Initialize blockchain clients
+	blockchainClient := blockchain.NewClient(conn, solidityConn, cfg.Linda)
+
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	// Create gateway mux with custom options
+	gwmux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+			MarshalOptions:   protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true},
+			UnmarshalOptions: protojson.UnmarshalOptions{DiscardUnknown: true},
+		}),
+		runtime.WithIncomingHeaderMatcher(middleware.CustomHeaderMatcher),
+		runtime.WithMetadata(middleware.AddRequestMetadata),
+		runtime.WithErrorHandler(middleware.CustomErrorHandler),
+	)
+
+	// Register all services
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(32*1024*1024)),
+	}
+
+	// Register Wallet service
+	if err := lindapb.RegisterWalletHandlerFromEndpoint(ctx, gwmux, cfg.Linda.FullnodeEndpoint, opts); err != nil {
+		panic(err)
+	}
+
+	// Register WalletSolidity service
+	if err := lindapb.RegisterWalletSolidityHandlerFromEndpoint(ctx, gwmux, cfg.Linda.SolidityEndpoint, opts); err != nil {
+		panic(err)
+	}
+
+	// Register JsonRpc service
+	if err := lindapb.RegisterJsonRpcHandlerFromEndpoint(ctx, gwmux, cfg.Linda.FullnodeEndpoint, opts); err != nil {
+		panic(err)
+	}
+
+	// Register EventService
+	if err := lindapb.RegisterEventServiceHandlerFromEndpoint(ctx, gwmux, cfg.Linda.EventEndpoint, opts); err != nil {
+		panic(err)
+	}
+
+	// Register Lindascan custom service
+	if err := lindapb.RegisterLindascanHandlerServer(ctx, gwmux, blockchainClient); err != nil {
+		panic(err)
+	}
+
+	// Build middleware chain
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   cfg.CORS.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+		MaxAge:           86400,
+	}).Handler(gwmux)
+
+	// Auth middleware (API Key & JWT)
+	handler = middleware.Auth(authService, cfg.Auth)(handler)
+
+	// Rate limiting middleware
+	handler = middleware.RateLimit(redisCache.Client(), middleware.RateLimitConfig{
+		Enabled:     cfg.RateLimit.Enabled,
+		DefaultQPS:  cfg.RateLimit.DefaultQPS,
+		DefaultBurst: cfg.RateLimit.DefaultBurst,
+		Strategy:    cfg.RateLimit.Strategy,
+		Store:       cfg.RateLimit.Store,
+	})(handler)
+
+	// Allowlist middleware
+	handler = middleware.Allowlist(authService)(handler)
+
+	// Response interceptor for address conversion
+	handler = middleware.ResponseInterceptor(handler)
+
+	// Logging middleware
+	handler = middleware.Logger(cfg.Logging)(handler)
+
+	// Recovery middleware
+	handler = middleware.Recovery()(handler)
+
+	// Start server
+	server := &http.Server{
+		Addr:         ":" + cfg.Server.HTTPPort,
+		Handler:      handler,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }

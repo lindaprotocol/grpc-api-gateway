@@ -1,0 +1,98 @@
+.PHONY: proto build clean test run deps docker-up docker-down lint help init
+
+PROJECT_NAME = grpc-api-gateway
+GO = go
+GOFLAGS = -v
+BIN_DIR = bin
+CMD_DIR = cmd
+MAIN_GATEWAY = ./cmd/gateway
+MAIN_INDEXER = ./cmd/indexer
+MAIN_APIKEY = ./cmd/apikey
+
+# Colors for output (disable if tput not available)
+GREEN := "\\033[0;32m"
+YELLOW := "\\033[1;33m"
+CYAN := "\\033[0;36m"
+RESET := "\\033[0m"
+
+help:
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Available targets:'
+	@echo '  init          Initialize project (deps + proto)'
+	@echo '  deps          Download dependencies'
+	@echo '  proto         Generate protobuf files'
+	@echo '  build         Build all binaries'
+	@echo '  clean         Clean build artifacts'
+	@echo '  run-gateway   Run gateway locally'
+	@echo '  run-indexer   Run indexer locally'
+	@echo '  test          Run tests'
+	@echo '  fmt           Format code'
+	@echo '  vet           Run go vet'
+
+init: deps proto
+	@echo "$(GREEN)Project initialized!$(RESET)"
+
+deps:
+	@echo "$(CYAN)Downloading dependencies...$(RESET)"
+	$(GO) mod download
+	$(GO) mod tidy
+	@echo "$(GREEN)Dependencies downloaded!$(RESET)"
+
+proto:
+	@echo "$(CYAN)Generating protobuf files...$(RESET)"
+	@chmod +x scripts/gen-proto.sh 2>/dev/null || true
+	@./scripts/gen-proto.sh
+	@echo "$(GREEN)Proto generation complete!$(RESET)"
+
+build: proto
+	@echo "$(CYAN)Building binaries...$(RESET)"
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/gateway $(MAIN_GATEWAY)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/indexer $(MAIN_INDEXER)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/apikey $(MAIN_APIKEY)
+	@echo "$(GREEN)Build complete! Binaries in $(BIN_DIR)/$(RESET)"
+
+build-gateway:
+	@echo "$(CYAN)Building gateway...$(RESET)"
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/gateway $(MAIN_GATEWAY)
+	@echo "$(GREEN)Gateway build complete!$(RESET)"
+
+build-indexer:
+	@echo "$(CYAN)Building indexer...$(RESET)"
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/indexer $(MAIN_INDEXER)
+	@echo "$(GREEN)Indexer build complete!$(RESET)"
+
+clean:
+	@echo "$(CYAN)Cleaning...$(RESET)"
+	rm -rf $(BIN_DIR)
+	rm -rf pkg/lindapb/*.pb.go
+	rm -rf pkg/lindapb/core/*.pb.go
+	@echo "$(GREEN)Clean complete!$(RESET)"
+
+test:
+	@echo "$(CYAN)Running tests...$(RESET)"
+	$(GO) test ./... -cover
+	@echo "$(GREEN)Tests complete!$(RESET)"
+
+fmt:
+	@echo "$(CYAN)Formatting code...$(RESET)"
+	$(GO) fmt ./...
+	@echo "$(GREEN)Formatting complete!$(RESET)"
+
+vet:
+	@echo "$(CYAN)Running go vet...$(RESET)"
+	$(GO) vet ./...
+	@echo "$(GREEN)Vet complete!$(RESET)"
+
+run-gateway: build-gateway
+	@echo "$(CYAN)Starting gateway...$(RESET)"
+	./$(BIN_DIR)/gateway -config ./internal/config/config.yaml
+
+run-indexer: build-indexer
+	@echo "$(CYAN)Starting indexer...$(RESET)"
+	./$(BIN_DIR)/indexer -config ./internal/config/config.yaml
+
+run: run-gateway

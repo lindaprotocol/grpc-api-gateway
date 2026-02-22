@@ -1,0 +1,87 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: lindascan-postgres
+    environment:
+      POSTGRES_USER: lindascan
+      POSTGRES_PASSWORD: lindascan123
+      POSTGRES_DB: lindascan
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - lindascan-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: lindascan-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - lindascan-network
+
+  gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: lindascan-gateway
+    ports:
+      - "18890:18890"
+      - "2112:2112"
+    environment:
+      - CONFIG_PATH=/app/config/config.yaml
+      - CMC_API_KEY=${CMC_API_KEY}
+      - IPGEO_API_KEY=${IPGEO_API_KEY}
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../internal/config/config.yaml:/app/config/config.yaml
+    networks:
+      - lindascan-network
+    restart: unless-stopped
+
+  indexer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.indexer
+    container_name: lindascan-indexer
+    environment:
+      - CONFIG_PATH=/app/config/config.yaml
+    depends_on:
+      - postgres
+      - redis
+      - gateway
+    volumes:
+      - ../internal/config/config.yaml:/app/config/config.yaml
+    networks:
+      - lindascan-network
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: lindascan-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - gateway
+    networks:
+      - lindascan-network
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+
+networks:
+  lindascan-network:
+    driver: bridge

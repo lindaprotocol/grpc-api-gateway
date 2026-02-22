@@ -1,14 +1,18 @@
 server:
+  http_port: 18890
   grpc_port: 50051
-  http_port: 8080
   enable_tls: false
   cert_file: ""
   key_file: ""
 
+environment: "production"  # production, staging, development
+
 linda:
   fullnode_endpoint: "localhost:50051"
   solidity_endpoint: "localhost:50061"
+  event_endpoint: "localhost:8080"
   grpc_timeout: 30s
+  max_msg_size: 10485760  # 10MB
 
 database:
   driver: "postgres"
@@ -20,30 +24,88 @@ database:
   sslmode: "disable"
   max_connections: 100
   idle_connections: 10
+  conn_max_lifetime: 3600
 
 redis:
   addr: "localhost:6379"
   password: ""
   db: 0
-  pool_size: 10
+  pool_size: 100
+  min_idle_conns: 10
+  max_retries: 3
+
+auth:
+  api_key_enabled: true
+  jwt_enabled: true
+  jwt_secret: "your-jwt-secret"
+  jwt_expiry: 86400  # 24 hours
+  max_keys_per_account: 3
+  default_rate_limit_qps: 15
+  default_daily_limit: 100000
+  unauthenticated_rate_limit_qps: 5
+  unauthenticated_daily_limit: 10000
+  penalty_duration: 30  # seconds
+  allow_anonymous: false
+
+rate_limit:
+  enabled: true
+  default_qps: 15
+  default_burst: 30
+  strategy: "token_bucket"  # token_bucket, sliding_window, leaky_bucket
+  store: "redis"  # redis, memory
+
+allowlist:
+  enabled: true
+  user_agent_enabled: true
+  origin_enabled: true
+  contract_address_enabled: true
+  api_method_enabled: true
+
+cors:
+  allowed_origins:
+    - "https://lindascan.org"
+    - "https://*.lindascan.org"
+    - "https://lindagrid.lindacoin.org"
+    - "https://*.lindacoin.org"
+
+cache:
+  default_ttl: 300  # seconds
+  account_ttl: 300
+  block_ttl: 600
+  transaction_ttl: 600
+  token_ttl: 300
+  stats_ttl: 60
+
+indexer:
+  enabled: true
+  block_batch_size: 100
+  transaction_batch_size: 500
+  contract_batch_size: 50
+  sync_interval: 5s
+  start_block: 0
+  max_workers: 10
+
+logging:
+  level: "info"  # debug, info, warn, error
+  format: "json"  # json, text
+  output: "stdout"
+  traces: true
+
+tracing:
+  enabled: false
+  agent_host: "localhost"
+  agent_port: 8126
+
+metrics:
+  enabled: true
+  prometheus_endpoint: "/metrics"
+  port: 2112
 
 external_apis:
   coinmarketcap:
     api_key: "${CMC_API_KEY}"
     base_url: "https://pro-api.coinmarketcap.com/v1"
   ipgeo:
-    provider: "ipapi" # or "maxmind"
+    provider: "ipapi"  # ipapi, maxmind
     api_key: "${IPGEO_API_KEY}"
-
-cache:
-  default_ttl: 300 # seconds
-  stats_ttl: 60
-  token_ttl: 300
-  account_ttl: 300
-
-indexer:
-  block_batch_size: 100
-  transaction_batch_size: 500
-  contract_batch_size: 50
-  sync_interval: 5s
-  start_block: 0
+    maxmind_db_path: "/data/GeoLite2-City.mmdb"

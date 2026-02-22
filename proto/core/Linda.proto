@@ -1,14 +1,12 @@
 syntax = "proto3";
 
 import "google/protobuf/any.proto";
-import "core/Discover.proto";
 
 package protocol;
 
-
-option java_package = "org.linda.protos"; //Specify the name of the package that generated the Java file
-option java_outer_classname = "Protocol"; //Specify the class name of the generated Java file
-option go_package = "github.com/lindaprotocol/grpc-api-gateway/pkg/api/protocol";
+option java_package = "org.linda.protos";
+option java_outer_classname = "Protocol";
+option go_package = "github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb";
 
 enum AccountType {
   Normal = 0;
@@ -16,80 +14,114 @@ enum AccountType {
   Contract = 2;
 }
 
-// AccountId, (name, address) use name, (null, address) use address, (name, null) use name,
+enum ResourceCode {
+  BANDWIDTH = 0;
+  ENERGY = 1;
+}
+
 message AccountId {
   bytes name = 1;
   bytes address = 2;
 }
 
-// vote message
 message Vote {
-  // the super rep address
   bytes vote_address = 1;
-  // the vote num to this super rep.
   int64 vote_count = 2;
 }
 
-// Account
 message Account {
-  // frozen balance
   message Frozen {
-    // the frozen lind balance
     int64 frozen_balance = 1;
-    // the expire time
     int64 expire_time = 2;
   }
-
+  
   bytes account_name = 1;
   AccountType type = 2;
-  // the create address
   bytes address = 3;
-  // the lind balance
   int64 balance = 4;
-  // the votes
   repeated Vote votes = 5;
-  // the other asset owned by this account
   map<string, int64> asset = 6;
-  // latest asset operation time
-  // the frozen balance
   repeated Frozen frozen = 7;
-  // bandwidth, get from frozen
   int64 net_usage = 8;
-  // this account create time
   int64 create_time = 9;
-  // this last operation time, including transfer, voting and so on. //FIXME fix grammar
   int64 latest_opration_time = 10;
-  // witness block producing allowance
   int64 allowance = 11;
-  // last withdraw time
   int64 latest_withdraw_time = 12;
-  // not used so far
   bytes code = 13;
   bool is_witness = 14;
   bool is_committee = 15;
-  // frozen asset(for asset issuer)
   repeated Frozen frozen_supply = 16;
-  // asset_issued_name
   bytes asset_issued_name = 17;
   map<string, int64> latest_asset_operation_time = 18;
   int64 free_net_usage = 19;
   map<string, int64> free_asset_net_usage = 20;
   int64 latest_consume_time = 21;
   int64 latest_consume_free_time = 22;
+  bytes account_id = 23;
+  AccountResource account_resource = 26;
+  bytes code_hash = 30;
+  Permission owner_permission = 31;
+  Permission witness_permission = 32;
+  repeated Permission active_permission = 33;
+  map<string, int64> assetV2 = 34;
+  map<string, int64> free_asset_net_usageV2 = 35;
+  map<string, int64> latest_asset_operation_timeV2 = 36;
+  int64 net_window_size = 41;
+  bool net_window_optimized = 42;
+  int64 delegated_frozen_balance_for_bandwidth = 51;
+  int64 acquired_delegated_frozen_balance_for_bandwidth = 52;
+  repeated FreezeV2 frozenV2 = 53;
+  repeated UnFreezeV2 unfrozenV2 = 54;
+  int64 delegated_frozenV2_balance_for_bandwidth = 55;
+  int64 acquired_delegated_frozenV2_balance_for_bandwidth = 56;
 }
 
-//FIXME authority?
-message acuthrity {
-  AccountId account = 1;
-  bytes permission_name = 2;
+message FreezeV2 {
+  int64 amount = 1;
+  ResourceCode type = 2;
 }
 
-//FIXME permission
-message permision {
-  AccountId account = 1;
+message UnFreezeV2 {
+  ResourceCode type = 1;
+  int64 unfreeze_amount = 2;
+  int64 unfreeze_expire_time = 3;
 }
 
-// Witness
+message AccountResource {
+  message FrozenBalanceForEnergy {
+    int64 frozen_balance = 1;
+    int64 expire_time = 2;
+  }
+  int64 energy_usage = 1;
+  FrozenBalanceForEnergy frozen_balance_for_energy = 2;
+  int64 delegated_frozen_balance_for_energy = 3;
+  int64 acquired_delegated_frozen_balance_for_energy = 4;
+  int64 energy_window_size = 5;
+  bool energy_window_optimized = 6;
+  int64 latest_consume_time_for_energy = 7;
+  int64 delegated_frozenV2_balance_for_energy = 8;
+  int64 acquired_delegated_frozenV2_balance_for_energy = 9;
+}
+
+message Permission {
+  enum PermissionType {
+    Owner = 0;
+    Witness = 1;
+    Active = 2;
+  }
+  message Key {
+    bytes address = 1;
+    int64 weight = 2;
+  }
+  PermissionType type = 1;
+  int32 id = 2;
+  string permission_name = 3;
+  int64 threshold = 4;
+  int32 parent_id = 5;
+  bytes operations = 6;
+  repeated Key keys = 7;
+}
+
 message Witness {
   bytes address = 1;
   int64 voteCount = 2;
@@ -102,35 +134,34 @@ message Witness {
   bool isJobs = 9;
 }
 
-
-// Vote Change
 message Votes {
   bytes address = 1;
   repeated Vote old_votes = 2;
   repeated Vote new_votes = 3;
 }
 
-// Transcation
-
-message TXOutput {
-  int64 value = 1;
-  bytes pubKeyHash = 2;
+enum ContractResult {
+  DEFAULT = 0;
+  SUCCESS = 1;
+  REVERT = 2;
+  BAD_JUMP_DESTINATION = 3;
+  OUT_OF_MEMORY = 4;
+  PRECOMPILED_CONTRACT = 5;
+  STACK_TOO_SMALL = 6;
+  STACK_TOO_LARGE = 7;
+  ILLEGAL_OPERATION = 8;
+  STACK_OVERFLOW = 9;
+  OUT_OF_ENERGY = 10;
+  OUT_OF_TIME = 11;
+  JVM_STACK_OVER_FLOW = 12;
+  CONTRACT_UNKNOWN = 13;
+  TRANSFER_FAILED = 14;
 }
 
-message TXInput {
-  message raw {
-    bytes txID = 1;
-    int64 vout = 2;
-    bytes pubKey = 3;
-  }
-  raw raw_data = 1;
-  bytes signature = 4;
+message Authority {
+  bytes account = 1;
+  Permission permission = 2;
 }
-
-message TXOutputs {
-  repeated TXOutput outputs = 1;
-}
-
 
 message Transaction {
   message Contract {
@@ -151,13 +182,38 @@ message Transaction {
       WithdrawBalanceContract = 13;
       UnfreezeAssetContract = 14;
       UpdateAssetContract = 15;
+      ProposalCreateContract = 16;
+      ProposalApproveContract = 17;
+      ProposalDeleteContract = 18;
+      SetAccountIdContract = 19;
       CustomContract = 20;
+      CreateSmartContract = 30;
+      TriggerSmartContract = 31;
+      GetContract = 32;
+      UpdateSettingContract = 33;
+      ExchangeCreateContract = 41;
+      ExchangeInjectContract = 42;
+      ExchangeWithdrawContract = 43;
+      ExchangeTransactionContract = 44;
+      AccountPermissionUpdateContract = 46;
+      ClearABIContract = 48;
+      UpdateEnergyLimitContract = 49;
+      AccountCreateContractV2 = 50;
+      FreezeBalanceV2Contract = 51;
+      UnfreezeBalanceV2Contract = 52;
+      WithdrawExpireUnfreezeContract = 53;
+      DelegateResourceContract = 54;
+      UnDelegateResourceContract = 55;
+      CancelAllUnfreezeV2Contract = 56;
+      UpdateBrokerageContract = 57;
+      MarketSellAssetContract = 61;
+      MarketCancelOrderContract = 62;
     }
     ContractType type = 1;
     google.protobuf.Any parameter = 2;
     bytes provider = 3;
     bytes ContractName = 4;
-
+    int64 Permission_id = 5;
   }
 
   message Result {
@@ -167,6 +223,7 @@ message Transaction {
     }
     int64 fee = 1;
     code ret = 2;
+    ContractResult contractRet = 3;
   }
 
   message raw {
@@ -174,36 +231,81 @@ message Transaction {
     int64 ref_block_num = 3;
     bytes ref_block_hash = 4;
     int64 expiration = 8;
-    repeated acuthrity auths = 9; //FIXME authority
-    // data not used
+    repeated Authority auths = 9;
     bytes data = 10;
-    //only support size = 1,  repeated list here for extension
     repeated Contract contract = 11;
-    // scripts not used
     bytes scripts = 12;
     int64 timestamp = 14;
+    int64 fee_limit = 18;
   }
 
-  raw raw_data = 1;
-  // only support size = 1,  repeated list here for muti-sig extension
-  repeated bytes signature = 2;
+  bytes txID = 1;
+  raw raw_data = 2;
+  repeated bytes signature = 3;
   repeated Result ret = 5;
 }
 
-// message TransactionInfo {
-//  bytes id = 1;
-//  int64 fee = 2;
-//  int64 blockNumber = 3;
-//  int64 blockTimeStamp = 4;
-// }
-
-message Transactions {
-  repeated Transaction transactions = 1;
+message TransactionInfo {
+  enum code {
+    SUCESS = 0;
+    FAILED = 1;
+  }
+  bytes id = 1;
+  int64 fee = 2;
+  int64 blockNumber = 3;
+  int64 blockTimeStamp = 4;
+  repeated bytes contractResult = 5;
+  bytes contract_address = 6;
+  ResourceReceipt receipt = 7;
+  repeated Log log = 8;
+  code result = 9;
+  bytes resMessage = 10;
+  string assetIssueID = 14;
+  int64 withdraw_amount = 15;
+  int64 unfreeze_amount = 16;
+  repeated InternalTransaction internal_transactions = 17;
+  int64 withdraw_expire_amount = 18;
+  map<string, int64> cancel_unfreezeV2_amount = 19;
+  int64 exchange_received_amount = 21;
+  int64 exchange_inject_another_amount = 22;
+  int64 exchange_withdraw_another_amount = 23;
+  int64 exchange_id = 24;
+  int64 shielded_transaction_fee = 25;
 }
 
-message TransactionSign {
-  Transaction transaction = 1;
-  bytes privateKey = 2;
+message TransactionReceipt {
+  bytes receipt = 1;
+}
+
+message ResourceReceipt {
+  int64 energy_usage = 1;
+  int64 energy_fee = 2;
+  int64 origin_energy_usage = 3;
+  int64 energy_usage_total = 4;
+  int64 net_usage = 5;
+  int64 net_fee = 6;
+  Transaction.Result.code result = 7;
+  int64 energy_penalty_total = 8;
+}
+
+message Log {
+  bytes address = 1;
+  repeated bytes topics = 2;
+  bytes data = 3;
+}
+
+message InternalTransaction {
+  bytes internal_tx_id = 1;
+  bytes from_address = 2;
+  bytes to_address = 3;
+  InternalTransactionData data = 4;
+  int64 block_timestamp = 5;
+}
+
+message InternalTransactionData {
+  string note = 1;
+  bool rejected = 2;
+  map<string, string> extra = 3;
 }
 
 message BlockHeader {
@@ -211,20 +313,20 @@ message BlockHeader {
     int64 timestamp = 1;
     bytes txTrieRoot = 2;
     bytes parentHash = 3;
-    //bytes nonce = 5;
-    //bytes difficulty = 6;
     int64 number = 7;
     int64 witness_id = 8;
     bytes witness_address = 9;
+    int32 version = 10;
+    bytes accountStateRoot = 11;
   }
   raw raw_data = 1;
   bytes witness_signature = 2;
 }
 
-// block
 message Block {
   repeated Transaction transactions = 1;
   BlockHeader block_header = 2;
+  bytes blockID = 3;
 }
 
 message ChainInventory {
@@ -236,14 +338,12 @@ message ChainInventory {
   int64 remain_num = 2;
 }
 
-// Inventory
 message BlockInventory {
   enum Type {
     SYNC = 0;
     ADVTISE = 1;
     FETCH = 2;
   }
-
   message BlockId {
     bytes hash = 1;
     int64 number = 2;
@@ -254,7 +354,7 @@ message BlockInventory {
 
 message Inventory {
   enum InventoryType {
-    TRX = 0;
+    LIND = 0;
     BLOCK = 1;
   }
   InventoryType type = 1;
@@ -264,47 +364,45 @@ message Inventory {
 message Items {
   enum ItemType {
     ERR = 0;
-    TRX = 1;
+    LIND = 1;
     BLOCK = 2;
     BLOCKHEADER = 3;
   }
-
   ItemType type = 1;
   repeated Block blocks = 2;
   repeated BlockHeader block_headers = 3;
   repeated Transaction transactions = 4;
 }
 
-// DynamicProperties
 message DynamicProperties {
   int64 last_solidity_block_num = 1;
 }
 
 enum ReasonCode {
-  REQUESTED = 0x00;
-  BAD_PROTOCOL = 0x02;
-  TOO_MANY_PEERS = 0x04;
-  DUPLICATE_PEER = 0x05;
-  INCOMPATIBLE_PROTOCOL = 0x06;
-  NULL_IDENTITY = 0x07;
-  PEER_QUITING = 0x08;
-  UNEXPECTED_IDENTITY = 0x09;
-  LOCAL_IDENTITY = 0x0A;
-  PING_TIMEOUT = 0x0B;
-  USER_REASON = 0x10;
-  RESET = 0x11;
-  SYNC_FAIL = 0x12;
-  FETCH_FAIL = 0x13;
-  BAD_TX = 0x14;
-  BAD_BLOCK = 0x15;
-  FORKED = 0x16;
-  UNLINKABLE = 0x17;
-  INCOMPATIBLE_VERSION = 0x18;
-  INCOMPATIBLE_CHAIN = 0x19;
-  TIME_OUT = 0x20;
-  CONNECT_FAIL = 0x21;
-  TOO_MANY_PEERS_WITH_SAME_IP = 0x22;
-  UNKNOWN = 0xFF;
+  REQUESTED = 0;
+  BAD_PROTOCOL = 2;
+  TOO_MANY_PEERS = 4;
+  DUPLICATE_PEER = 5;
+  INCOMPATIBLE_PROTOCOL = 6;
+  NULL_IDENTITY = 7;
+  PEER_QUITING = 8;
+  UNEXPECTED_IDENTITY = 9;
+  LOCAL_IDENTITY = 10;
+  PING_TIMEOUT = 11;
+  USER_REASON = 16;
+  RESET = 17;
+  SYNC_FAIL = 18;
+  FETCH_FAIL = 19;
+  BAD_TX = 20;
+  BAD_BLOCK = 21;
+  FORKED = 22;
+  UNLINKABLE = 23;
+  INCOMPATIBLE_VERSION = 24;
+  INCOMPATIBLE_CHAIN = 25;
+  TIME_OUT = 32;
+  CONNECT_FAIL = 33;
+  TOO_MANY_PEERS_WITH_SAME_IP = 34;
+  UNKNOWN = 255;
 }
 
 message DisconnectMessage {
@@ -316,11 +414,16 @@ message HelloMessage {
     bytes hash = 1;
     int64 number = 2;
   }
-
   Endpoint from = 1;
   int32 version = 2;
   int64 timestamp = 3;
   BlockId genesisBlockId = 4;
   BlockId solidBlockId = 5;
   BlockId headBlockId = 6;
+}
+
+message Endpoint {
+  bytes address = 1;
+  int32 port = 2;
+  bytes nodeId = 3;
 }
