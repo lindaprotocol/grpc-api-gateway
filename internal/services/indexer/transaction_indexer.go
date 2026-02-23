@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/utils"
 )

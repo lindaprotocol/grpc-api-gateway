@@ -7,7 +7,7 @@ import (
 
 	"github.com/lindaprotocol/grpc-api-gateway/internal/config"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/auth"
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

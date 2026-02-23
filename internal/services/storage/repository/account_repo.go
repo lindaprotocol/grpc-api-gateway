@@ -3,7 +3,7 @@ package repository
 import (
 	"time"
 
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"gorm.io/gorm"
 )
 

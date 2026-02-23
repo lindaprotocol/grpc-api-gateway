@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"gorm.io/gorm"
 )
 

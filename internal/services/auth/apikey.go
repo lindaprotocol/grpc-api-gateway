@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"time"
 	
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"encoding/json"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/blockchain"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/storage/repository"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
