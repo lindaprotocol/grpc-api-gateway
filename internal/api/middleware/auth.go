@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/config"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/auth"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/utils"

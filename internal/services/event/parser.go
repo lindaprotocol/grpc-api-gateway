@@ -3,7 +3,6 @@ package event
 import (
 	"encoding/hex"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"

@@ -1,31 +1,32 @@
+// internal/services/auth/apikey.go
 package auth
 
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json" // Add this import
 	"time"
-	
-	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
-	"encoding/json"
+
 	"github.com/google/uuid"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
 
 type APIKey struct {
-	ID          string     `gorm:"primaryKey;type:uuid"`
-	UserID      string     `gorm:"index;not null"`
-	Key         string     `gorm:"uniqueIndex;not null"`
-	KeyHash     string     `gorm:"not null"`
-	Name        string     `gorm:"not null"`
-	CreatedAt   time.Time  `gorm:"not null"`
-	ExpiresAt   *time.Time `gorm:"index"`
-	LastUsedAt  *time.Time `gorm:"index"`
-	IsActive    bool       `gorm:"default:true"`
-	DailyLimit  int64      `gorm:"default:100000"`
-	RateLimitQPS int       `gorm:"default:15"`
-	BlockedUntil *time.Time
-	Metadata    JSON       `gorm:"type:jsonb"`
+	ID            string     `gorm:"primaryKey;type:uuid"`
+	UserID        string     `gorm:"index;not null"`
+	Key           string     `gorm:"uniqueIndex;not null"`
+	KeyHash       string     `gorm:"not null"`
+	Name          string     `gorm:"not null"`
+	CreatedAt     time.Time  `gorm:"not null"`
+	ExpiresAt     *time.Time `gorm:"index"`
+	LastUsedAt    *time.Time `gorm:"index"`
+	IsActive      bool       `gorm:"default:true"`
+	DailyLimit    int64      `gorm:"default:100000"`
+	RateLimitQPS  int        `gorm:"default:15"`
+	BlockedUntil  *time.Time
+	Metadata      models.JSON `gorm:"type:jsonb"`
 }
 
 func (APIKey) TableName() string {
@@ -55,17 +56,23 @@ func (s *APIKeyService) GenerateAPIKey(userID, name string, dailyLimit int64, ra
 		return nil, "", err
 	}
 
+	// Initialize metadata as empty JSON object
+	metadata, err := json.Marshal(map[string]interface{}{})
+	if err != nil {
+		return nil, "", err
+	}
+
 	apiKey := &APIKey{
-		ID:          uuid.New().String(),
-		UserID:      userID,
-		Key:         plainKey, // Store hash instead in production
-		KeyHash:     string(keyHash),
-		Name:        name,
-		CreatedAt:   time.Now(),
-		IsActive:    true,
-		DailyLimit:  dailyLimit,
+		ID:           uuid.New().String(),
+		UserID:       userID,
+		Key:          plainKey,
+		KeyHash:      string(keyHash),
+		Name:         name,
+		CreatedAt:    time.Now(),
+		IsActive:     true,
+		DailyLimit:   dailyLimit,
 		RateLimitQPS: rateLimitQPS,
-		Metadata:    make(JSON),
+		Metadata:     models.JSON(metadata), // Convert to models.JSON
 	}
 
 	if err := s.db.Create(apiKey).Error; err != nil {
@@ -126,7 +133,7 @@ func (s *APIKeyService) BlockAPIKey(keyID string, duration time.Duration) error 
 // UpdateKeyLimits updates rate limits for a key
 func (s *APIKeyService) UpdateKeyLimits(keyID string, dailyLimit int64, rateLimitQPS int) error {
 	return s.db.Model(&APIKey{}).Where("id = ?", keyID).Updates(map[string]interface{}{
-		"daily_limit":   dailyLimit,
+		"daily_limit":    dailyLimit,
 		"rate_limit_qps": rateLimitQPS,
 	}).Error
 }

@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"gorm.io/gorm"
 )
@@ -17,6 +18,16 @@ func NewEventRepository(db *gorm.DB) *EventRepository {
 
 // SaveEvent function: Saves an event
 func (r *EventRepository) SaveEvent(event *models.EventResponse) error {
+		// Marshal the maps to JSON
+		resultJSON, err := json.Marshal(event.Result)
+		if err != nil {
+			return err
+		}
+		
+		resultTypeJSON, err := json.Marshal(event.ResultType)
+		if err != nil {
+			return err
+		}
     // Convert to Event model for storage
     eventModel := &models.Event{
         BlockNumber:     event.BlockNumber,
@@ -26,8 +37,8 @@ func (r *EventRepository) SaveEvent(event *models.EventResponse) error {
         EventName:       event.EventName,
         EventSignature:  event.Event,
         TransactionID:   event.TransactionID,
-        Result:          event.Result,
-        ResultType:      event.ResultType,
+        Result:          models.JSON(resultJSON),
+        ResultType:      models.JSON(resultTypeJSON),
         Unconfirmed:     event.Unconfirmed,
     }
     return r.db.Save(eventModel).Error

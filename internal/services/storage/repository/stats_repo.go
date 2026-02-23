@@ -2,11 +2,7 @@ package repository
 
 import (
 	"encoding/json"
-	"time"
-
 	
-	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
-	"encoding/json"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"gorm.io/gorm"
 )

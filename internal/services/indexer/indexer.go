@@ -8,6 +8,7 @@ import (
 	"github.com/lindaprotocol/grpc-api-gateway/internal/config"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/blockchain"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/storage/repository"
+	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,6 +25,11 @@ type Indexer struct {
 	stopChan        chan struct{}
 	wg              sync.WaitGroup
 	currentBlock    int64
+
+	blockIndexer     *BlockIndexer
+	txIndexer        *TransactionIndexer
+	tokenIndexer     *TokenIndexer     
+	eventIndexer     *EventIndexer
 }
 
 func NewIndexer(
@@ -47,6 +53,14 @@ func NewIndexer(
 		stopChan:        make(chan struct{}),
 		currentBlock:    0,
 	}
+
+	// Initialize indexers
+	idx.blockIndexer = NewBlockIndexer(idx)
+	idx.txIndexer = NewTransactionIndexer(idx)
+	idx.tokenIndexer = NewTokenIndexer(idx)    // Add this line
+	idx.eventIndexer = NewEventIndexer(idx)
+	
+	return idx
 }
 
 func (i *Indexer) Start() error {

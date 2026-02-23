@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"strings"
 	"time"
 
 	"github.com/google/uuid"

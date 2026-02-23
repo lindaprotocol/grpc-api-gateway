@@ -3,8 +3,6 @@ package middleware
 import (
 	"bytes"
 	"encoding/json"
-	"io"
-	"net/http"
 	"strings"
 	"time"
 

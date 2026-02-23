@@ -1,15 +1,15 @@
+// internal/services/indexer/event_indexer.go
 package indexer
 
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"math/big"
 
-	
-	"github.com/lindaprotocol/grpc-api-gateway/internal/services/event"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/services/event"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
-	"github.com/lindaprotocol/grpc-api-gateway/pkg/utils"
 )
 
 type EventIndexer struct {
@@ -114,7 +114,7 @@ func (ei *EventIndexer) GetEventsByFilter(filter *event.EventFilter) ([]*models.
 }
 
 // ParseEventLog parses a raw event log into a structured event
-func (ei *EventIndexer) ParseEventLog(log *lindapb.TransactionInfo_Log, blockNumber, blockTimestamp int64, txID string) (*models.EventResponse, error) {
+func (ei *EventIndexer) ParseEventLog(log *lindapb.Log, blockNumber, blockTimestamp int64, txID string) (*models.EventResponse, error) {
 	event := &models.EventResponse{
 		BlockNumber:     blockNumber,
 		BlockTimestamp:  blockTimestamp,
@@ -191,7 +191,11 @@ func (ei *EventIndexer) GetTokenTransferValue(event *models.EventResponse) (*big
 	}
 	valueStr, ok := event.Result["value"].(string)
 	if !ok {
-		return nil, nil
+		return nil, errors.New("value field is not a string")
 	}
-	return new(big.Int).SetString(valueStr, 10)
+	val, success := new(big.Int).SetString(valueStr, 10)
+	if !success {
+		return nil, errors.New("failed to parse value as big.Int")
+	}
+	return val, nil
 }

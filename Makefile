@@ -1,83 +1,89 @@
-#!/bin/bash
+.PHONY: proto build clean test run deps docker-up docker-down lint help init
 
-set -e
+PROJECT_NAME = grpc-api-gateway
+GO = go
+GOFLAGS = -v
+BIN_DIR = bin
+CMD_DIR = cmd
+MAIN_GATEWAY = ./cmd/gateway
+MAIN_INDEXER = ./cmd/indexer
+MAIN_APIKEY = ./cmd/apikey
 
-PROJECT_ROOT=$(pwd)
-PROTO_DIR="${PROJECT_ROOT}/proto"
-OUT_DIR="${PROJECT_ROOT}/pkg/lindapb"
-THIRD_PARTY_DIR="${PROJECT_ROOT}/third_party"
-MODULE_PATH="github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
+help:
+	@echo 'Usage: make [target]'
+	@echo ''
+	@echo 'Available targets:'
+	@echo '  init          Initialize project (deps + proto)'
+	@echo '  deps          Download dependencies'
+	@echo '  proto         Generate protobuf files'
+	@echo '  build         Build all binaries'
+	@echo '  clean         Clean build artifacts'
+	@echo '  run-gateway   Run gateway locally'
+	@echo '  run-indexer   Run indexer locally'
 
-echo "Generating protos from: ${PROTO_DIR}"
+init: deps proto
+	@echo "Project initialized!"
 
-# Create output directories
-mkdir -p ${OUT_DIR}
-mkdir -p ${OUT_DIR}/core
+deps:
+	@echo "Downloading dependencies..."
+	$(GO) mod download
+	$(GO) mod tidy
+	@echo "Dependencies downloaded!"
 
-# Download googleapis if not present
-if [ ! -d "${THIRD_PARTY_DIR}/googleapis" ]; then
-    echo "Downloading googleapis..."
-    git clone https://github.com/googleapis/googleapis.git ${THIRD_PARTY_DIR}/googleapis
-fi
+proto:
+	@echo "Generating protobuf files..."
+	@chmod +x scripts/gen-proto.sh 2>/dev/null || true
+	@./scripts/gen-proto.sh
+	@echo "Proto generation complete!"
 
-# Check if protoc is installed
-if ! command -v protoc &> /dev/null; then
-    echo "protoc not found. Please install protobuf compiler:"
-    echo "  apt-get install -y protobuf-compiler"
-    exit 1
-fi
+build: proto
+	@echo "Building binaries..."
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/gateway $(MAIN_GATEWAY)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/indexer $(MAIN_INDEXER)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/apikey $(MAIN_APIKEY)
+	@echo "Build complete! Binaries in $(BIN_DIR)/"
 
-# Get the path to the locally installed plugins
-GOBIN=$(go env GOPATH)/bin
-export PATH=$PATH:$GOBIN
+build-gateway:
+	@echo "Building gateway..."
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/gateway $(MAIN_GATEWAY)
+	@echo "Gateway build complete!"
 
-# Define proto paths
-PROTO_PATH="\
--I${PROTO_DIR} \
--I${THIRD_PARTY_DIR}/googleapis"
+build-indexer:
+	@echo "Building indexer..."
+	mkdir -p $(BIN_DIR)
+	$(GO) build $(GOFLAGS) -o $(BIN_DIR)/indexer $(MAIN_INDEXER)
+	@echo "Indexer build complete!"
 
-echo "Generating core protos..."
-# Generate core protos
-protoc ${PROTO_PATH} \
-    --go_out=${OUT_DIR} \
-    --go_opt=module=${MODULE_PATH} \
-    --go-grpc_out=${OUT_DIR} \
-    --go-grpc_opt=module=${MODULE_PATH} \
-    ${PROTO_DIR}/core/*.proto
+clean:
+	@echo "Cleaning..."
+	rm -rf $(BIN_DIR)
+	rm -rf pkg/lindapb/*.pb.go
+	rm -rf pkg/lindapb/core/*.pb.go
+	@echo "Clean complete!"
 
-if [ $? -ne 0 ]; then
-    echo "Failed to generate core protos"
-    exit 1
-fi
+test:
+	@echo "Running tests..."
+	$(GO) test ./... -cover
+	@echo "Tests complete!"
 
-echo "Generating api.proto..."
-# Generate main api.proto with gateway
-protoc ${PROTO_PATH} \
-    --go_out=${OUT_DIR} \
-    --go_opt=module=${MODULE_PATH} \
-    --go-grpc_out=${OUT_DIR} \
-    --go-grpc_opt=module=${MODULE_PATH} \
-    --grpc-gateway_out=${OUT_DIR} \
-    --grpc-gateway_opt=module=${MODULE_PATH} \
-    --grpc-gateway_opt=logtostderr=true \
-    --grpc-gateway_opt=generate_unbound_methods=true \
-    ${PROTO_DIR}/api.proto
+fmt:
+	@echo "Formatting code..."
+	$(GO) fmt ./...
+	@echo "Formatting complete!"
 
-if [ $? -ne 0 ]; then
-    echo "Failed to generate api.proto"
-    exit 1
-fi
+vet:
+	@echo "Running go vet..."
+	$(GO) vet ./...
+	@echo "Vet complete!"
 
-echo "Proto generation complete!"
+run-gateway: build-gateway
+	@echo "Starting gateway..."
+	./$(BIN_DIR)/gateway -config ./internal/config/config.yaml
 
-# Run go mod tidy to update dependencies
-echo "Running go mod tidy to update dependencies..."
-cd ${PROJECT_ROOT}
-go mod tidy
+run-indexer: build-indexer
+	@echo "Starting indexer..."
+	./$(BIN_DIR)/indexer -config ./internal/config/config.yaml
 
-if [ $? -ne 0 ]; then
-    echo "Warning: go mod tidy encountered issues, but proto generation succeeded"
-    exit 0
-fi
-
-echo "All tasks completed successfully!"
+run: run-gateway

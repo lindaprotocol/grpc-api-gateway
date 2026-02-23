@@ -1,3 +1,4 @@
+// internal/services/auth/service.go
 package auth
 
 import (
@@ -153,6 +154,6 @@ func (s *Service) CheckViolation(user *User) bool {
 
 // BlockUser function: Temporarily blocks a user
 func (s *Service) BlockUser(user *User, duration time.Duration) error {
-    blockedUntil := time.Now().Add(duration)
+    // Simply pass the duration to BlockAPIKey, don't create an unused variable
     return s.apiKeyService.BlockAPIKey(user.APIKeyID, duration)
 }

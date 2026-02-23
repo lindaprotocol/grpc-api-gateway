@@ -2,8 +2,6 @@ package event
 
 import (
 	"context"
-	"encoding/json"
-	"time"
 
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/storage/repository"

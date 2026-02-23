@@ -1,116 +1,44 @@
+// internal/models/api_responses.go
 package models
 
-import (
-	"encoding/json"
-	"time"
-
-	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
-)
-
-type JSON json.RawMessage
+import "encoding/json"
 
 // ==================== Account API Responses ====================
-
 type AccountResponse struct {
-	Address            string                `json:"address"`
+	Address            string                 `json:"address"`
 	Balance            int64                  `json:"balance"`
 	AccountName        string                 `json:"account_name,omitempty"`
 	CreateTime         int64                  `json:"create_time,omitempty"`
 	IsWitness          bool                   `json:"is_witness"`
 	Allowance          int64                  `json:"allowance,omitempty"`
-	LatestWithdrawTime int64                   `json:"latest_withdraw_time,omitempty"`
-	LatestOperationTime int64                  `json:"latest_opration_time,omitempty"`
-	LatestConsumeTime  int64                   `json:"latest_consume_time,omitempty"`
-	LatestConsumeFreeTime int64                `json:"latest_consume_free_time,omitempty"`
-	NetWindowSize      int64                   `json:"net_window_size,omitempty"`
-	NetWindowOptimized bool                    `json:"net_window_optimized,omitempty"`
-	
-	// Stake 1.0 fields
-	Frozen             []Frozen                `json:"frozen,omitempty"`
-	DelegatedFrozenBalanceForBandwidth int64   `json:"delegated_frozen_balance_for_bandwidth,omitempty"`
+	LatestWithdrawTime int64                  `json:"latest_withdraw_time,omitempty"`
+	LatestOperationTime int64                 `json:"latest_opration_time,omitempty"`
+	LatestConsumeTime  int64                  `json:"latest_consume_time,omitempty"`
+	LatestConsumeFreeTime int64               `json:"latest_consume_free_time,omitempty"`
+	NetWindowSize      int64                  `json:"net_window_size,omitempty"`
+	NetWindowOptimized bool                   `json:"net_window_optimized,omitempty"`
+	Frozen             []Frozen               `json:"frozen,omitempty"`
+	DelegatedFrozenBalanceForBandwidth int64  `json:"delegated_frozen_balance_for_bandwidth,omitempty"`
 	AcquiredDelegatedFrozenBalanceForBandwidth int64 `json:"acquired_delegated_frozen_balance_for_bandwidth,omitempty"`
-	
-	// Stake 2.0 fields
-	FrozenV2           []FreezeV2              `json:"frozenV2,omitempty"`
-	UnfrozenV2         []UnFreezeV2            `json:"unfrozenV2,omitempty"`
+	FrozenV2           []FreezeV2             `json:"frozenV2,omitempty"`
+	UnfrozenV2         []UnFreezeV2           `json:"unfrozenV2,omitempty"`
 	DelegatedFrozenV2BalanceForBandwidth int64 `json:"delegated_frozenV2_balance_for_bandwidth,omitempty"`
 	AcquiredDelegatedFrozenV2BalanceForBandwidth int64 `json:"acquired_delegated_frozenV2_balance_for_bandwidth,omitempty"`
-	
-	// Account Resource
-	AccountResource    *AccountResource        `json:"account_resource,omitempty"`
-	
-	// Permissions
-	OwnerPermission    *Permission             `json:"owner_permission,omitempty"`
-	WitnessPermission  *Permission             `json:"witness_permission,omitempty"`
-	ActivePermissions  []*Permission           `json:"active_permission,omitempty"`
-	
-	// Assets
-	Asset              map[string]int64        `json:"asset,omitempty"`
-	AssetV2            map[string]int64        `json:"assetV2,omitempty"`
-	LRC20              []map[string]string     `json:"lrc20,omitempty"`
-	
-	// Votes
-	Votes              []Vote                   `json:"votes,omitempty"`
-	
-	// Usage
-	NetUsage           int64                    `json:"net_usage,omitempty"`
-	FreeNetUsage       int64                    `json:"free_net_usage,omitempty"`
-	FreeAssetNetUsageV2 map[string]int64        `json:"free_asset_net_usageV2,omitempty"`
-	
-	// Tags
-	Tags               []TagResponse            `json:"tags,omitempty"`
-}
-
-type Frozen struct {
-	FrozenBalance int64 `json:"frozen_balance"`
-	ExpireTime    int64 `json:"expire_time"`
-}
-
-type FreezeV2 struct {
-	Amount int64  `json:"amount"`
-	Type   string `json:"type"` // BANDWIDTH or ENERGY
-}
-
-type UnFreezeV2 struct {
-	Type               string `json:"type"`
-	UnfreezeAmount     int64  `json:"unfreeze_amount"`
-	UnfreezeExpireTime int64  `json:"unfreeze_expire_time"`
-}
-
-type AccountResource struct {
-	FrozenBalanceForEnergy                  *Frozen       `json:"frozen_balance_for_energy,omitempty"`
-	DelegatedFrozenBalanceForEnergy         int64         `json:"delegated_frozen_balance_for_energy,omitempty"`
-	AcquiredDelegatedFrozenBalanceForEnergy int64         `json:"acquired_delegated_frozen_balance_for_energy,omitempty"`
-	DelegatedFrozenV2BalanceForEnergy       int64         `json:"delegated_frozenV2_balance_for_energy,omitempty"`
-	AcquiredDelegatedFrozenV2BalanceForEnergy int64       `json:"acquired_delegated_frozenV2_balance_for_energy,omitempty"`
-	EnergyUsage                              int64         `json:"energy_usage,omitempty"`
-	EnergyWindowSize                         int64         `json:"energy_window_size,omitempty"`
-	EnergyWindowOptimized                     bool          `json:"energy_window_optimized,omitempty"`
-	LatestConsumeTimeForEnergy                int64         `json:"latest_consume_time_for_energy,omitempty"`
-}
-
-type Permission struct {
-	Type           int     `json:"type"`
-	ID             int     `json:"id,omitempty"`
-	PermissionName string  `json:"permission_name"`
-	Threshold      int64   `json:"threshold"`
-	ParentID       int     `json:"parent_id,omitempty"`
-	Operations     string  `json:"operations,omitempty"`
-	Keys           []Key   `json:"keys"`
-}
-
-type Key struct {
-	Address string `json:"address"`
-	Weight  int    `json:"weight"`
-}
-
-type Vote struct {
-	VoteAddress string `json:"vote_address"`
-	VoteCount   int64  `json:"vote_count"`
+	AccountResource    *AccountResource       `json:"account_resource,omitempty"`
+	OwnerPermission    *Permission            `json:"owner_permission,omitempty"`
+	WitnessPermission  *Permission            `json:"witness_permission,omitempty"`
+	ActivePermissions  []*Permission          `json:"active_permission,omitempty"`
+	Asset              map[string]int64       `json:"asset,omitempty"`
+	AssetV2            map[string]int64       `json:"assetV2,omitempty"`
+	LRC20              []map[string]string    `json:"lrc20,omitempty"`
+	Votes              []Vote                 `json:"votes,omitempty"`
+	NetUsage           int64                   `json:"net_usage,omitempty"`
+	FreeNetUsage       int64                   `json:"free_net_usage,omitempty"`
+	FreeAssetNetUsageV2 map[string]int64       `json:"free_asset_net_usageV2,omitempty"`
+	Tags               []TagResponse           `json:"tags,omitempty"`
 }
 
 // ==================== Transaction API Responses ====================
-
 type TransactionResponse struct {
 	TxID              string                 `json:"txID"`
 	BlockNumber       int64                   `json:"blockNumber,omitempty"`
@@ -178,7 +106,6 @@ type InternalTransactionData struct {
 }
 
 // ==================== TransactionInfo API Responses ====================
-
 type TransactionInfoResponse struct {
 	ID                        string                 `json:"id"`
 	Fee                       int64                   `json:"fee"`
@@ -221,20 +148,6 @@ type EventLog struct {
 }
 
 // ==================== Block API Responses ====================
-
-// PaginationMeta represents pagination metadata for API responses
-type PaginationMeta struct {
-    At          int64  `json:"at"`
-    PageSize    int    `json:"page_size"`
-    Fingerprint string `json:"fingerprint,omitempty"`
-    Links       *Links `json:"links,omitempty"`
-}
-
-// Links represents pagination links for API responses
-type Links struct {
-    Next string `json:"next,omitempty"`
-}
-
 type BlockResponse struct {
 	BlockID     string                 `json:"blockID"`
 	BlockHeader *BlockHeader           `json:"block_header"`
@@ -262,21 +175,20 @@ type BlockListResponse struct {
 }
 
 // ==================== Block Statistics API Responses ====================
-
 type BlockStatsResponse struct {
 	TxStat           *TxStat           `json:"txStat,omitempty"`
 	FeeStat          *FeeStat          `json:"feeStat"`
 }
 
 type TxStat struct {
-	LindAnd10TransferCount   int            `json:"lindAnd10TransferCount"`
-	Lrc20And721TransferCount int           `json:"lrc20And721TransferCount"`
-	Lrc1155TransferCount     int           `json:"lrc1155TransferCount"`
-	TransferCount            int           `json:"transferCount"`
-	FailTxCount              int           `json:"failTxCount"`
-	InternalTxCount          int           `json:"internalTxCount"`
-	ContainInternalTxCount   int           `json:"containInternalTxCount"`
-	ContractTypeDistribute   map[int]int   `json:"contractTypeDistribute"`
+	LindAnd10TransferCount   int         `json:"lindAnd10TransferCount"`
+	Lrc20And721TransferCount int        `json:"lrc20And721TransferCount"`
+	Lrc1155TransferCount     int        `json:"lrc1155TransferCount"`
+	TransferCount            int        `json:"transferCount"`
+	FailTxCount              int        `json:"failTxCount"`
+	InternalTxCount          int        `json:"internalTxCount"`
+	ContainInternalTxCount   int        `json:"containInternalTxCount"`
+	ContractTypeDistribute   map[int]int `json:"contractTypeDistribute"`
 }
 
 type FeeStat struct {
@@ -301,7 +213,6 @@ type FeeStat struct {
 }
 
 // ==================== Node API Responses ====================
-
 type NodeInfoResponse struct {
 	BeginSyncNum       int64            `json:"beginSyncNum"`
 	Block              string           `json:"block"`
@@ -382,7 +293,6 @@ type NodeAddress struct {
 }
 
 // ==================== Asset/Token API Responses ====================
-
 type AssetIssueResponse struct {
 	ID                       string         `json:"id"`
 	OwnerAddress             string         `json:"owner_address"`
@@ -390,7 +300,7 @@ type AssetIssueResponse struct {
 	Abbr                     string         `json:"abbr"`
 	TotalSupply              int64          `json:"total_supply"`
 	FrozenSupply             []FrozenSupply `json:"frozen_supply,omitempty"`
-	LindNum                   int32          `json:"lind_num"`
+	LindNum                  int32          `json:"lind_num"`
 	Num                      int32          `json:"num"`
 	Precision                int32          `json:"precision,omitempty"`
 	StartTime                int64          `json:"start_time"`
@@ -414,18 +324,17 @@ type AssetIssueListResponse struct {
 }
 
 // ==================== LRC20 Token API Responses ====================
-
-type LRC20TokenInfo struct {
-	Contract    string `json:"contract"`
-	Name        string `json:"name"`
-	Symbol      string `json:"symbol"`
-	Decimals    int32  `json:"decimals"`
-	TotalSupply string `json:"total_supply"`
-	Owner       string `json:"owner"`
-	IssueTime   int64  `json:"issue_time"`
-	Holders     int64  `json:"holders,omitempty"`
-	Transfers   int64  `json:"transfers,omitempty"`
-}
+// type LRC20TokenInfo struct {
+// 	Contract    string `json:"contract"`
+// 	Name        string `json:"name"`
+// 	Symbol      string `json:"symbol"`
+// 	Decimals    int32  `json:"decimals"`
+// 	TotalSupply string `json:"total_supply"`
+// 	Owner       string `json:"owner"`
+// 	IssueTime   int64  `json:"issue_time"`
+// 	Holders     int64  `json:"holders,omitempty"`
+// 	Transfers   int64  `json:"transfers,omitempty"`
+// }
 
 type LRC20TokenListResponse struct {
 	Tokens []LRC20TokenInfo `json:"tokens"`
@@ -462,7 +371,6 @@ type TokenTransfersResponse struct {
 }
 
 // ==================== Account Resource API Responses ====================
-
 type AccountResourceResponse struct {
 	FreeNetUsed     int64            `json:"freeNetUsed"`
 	FreeNetLimit    int64            `json:"freeNetLimit"`
@@ -482,7 +390,6 @@ type AccountResourceResponse struct {
 }
 
 // ==================== Delegated Resource API Responses ====================
-
 type DelegatedResourceResponse struct {
 	From                     string `json:"from"`
 	To                       string `json:"to"`
@@ -503,7 +410,6 @@ type DelegatedResourceAccountIndexResponse struct {
 }
 
 // ==================== Witness API Responses ====================
-
 type WitnessResponse struct {
 	Address        string `json:"address"`
 	VoteCount      int64  `json:"voteCount"`
@@ -520,7 +426,6 @@ type WitnessListResponse struct {
 }
 
 // ==================== Proposal API Responses ====================
-
 type ProposalResponse struct {
 	ProposalID      int64             `json:"proposal_id"`
 	ProposerAddress string            `json:"proposer_address"`
@@ -528,7 +433,7 @@ type ProposalResponse struct {
 	ExpirationTime  int64             `json:"expiration_time"`
 	CreateTime      int64             `json:"create_time"`
 	Approvals       []string          `json:"approvals"`
-	State           string            `json:"state"` // PENDING, DISAPPROVED, APPROVED, CANCELED
+	State           string            `json:"state"`
 }
 
 type ProposalListResponse struct {
@@ -536,7 +441,6 @@ type ProposalListResponse struct {
 }
 
 // ==================== Exchange API Responses ====================
-
 type ExchangeResponse struct {
 	ExchangeID        int64  `json:"exchange_id"`
 	CreatorAddress    string `json:"creator_address"`
@@ -552,7 +456,6 @@ type ExchangeListResponse struct {
 }
 
 // ==================== Market API Responses ====================
-
 type MarketOrderResponse struct {
 	OrderID        string `json:"order_id"`
 	OwnerAddress   string `json:"owner_address"`
@@ -561,7 +464,7 @@ type MarketOrderResponse struct {
 	SellTokenValue int64  `json:"sell_token_value"`
 	BuyTokenID     string `json:"buy_token_id"`
 	BuyTokenValue  int64  `json:"buy_token_value"`
-	OrderStatus    string `json:"order_status"` // PENDING, CANCELLED, COMPLETED
+	OrderStatus    string `json:"order_status"`
 }
 
 type MarketOrderListResponse struct {
@@ -589,7 +492,6 @@ type MarketPairListResponse struct {
 }
 
 // ==================== Smart Contract API Responses ====================
-
 type SmartContractResponse struct {
 	OriginAddress               string          `json:"origin_address"`
 	ContractAddress             string          `json:"contract_address"`
@@ -632,7 +534,6 @@ type TransactionExtentionResponse struct {
 }
 
 // ==================== Chain Parameters API Responses ====================
-
 type ChainParameter struct {
 	Key   string `json:"key"`
 	Value int64  `json:"value"`
@@ -642,8 +543,142 @@ type ChainParametersResponse struct {
 	ChainParameter []ChainParameter `json:"chainParameter"`
 }
 
-// ==================== JSON-RPC API Responses ====================
+// ==================== Statistics API Responses ====================
 
+// DailyStat represents daily statistics data
+type DailyStat struct {
+	Date  string `json:"date"`
+	Value int64  `json:"value"`
+}
+
+// EnergyStatisticResponse represents energy statistics response
+type EnergyStatisticResponse struct {
+	Address string     `json:"address"`
+	Total   int64      `json:"total"`
+	Daily   []DailyStat `json:"daily"`
+}
+
+// TriggerStatisticResponse represents trigger statistics response
+type TriggerStatisticResponse struct {
+	Contract string     `json:"contract"`
+	Count    int64      `json:"count"`
+	Daily    []DailyStat `json:"daily"`
+}
+
+// CallerAddressStatisticResponse represents caller statistics response
+type CallerAddressStatisticResponse struct {
+	Contract string       `json:"contract"`
+	Callers  []CallerStat `json:"callers"`
+}
+
+// CallerStat represents a caller statistic
+type CallerStat struct {
+	Address string `json:"address"`
+	Count   int64  `json:"count"`
+}
+
+// EnergyDailyStatisticResponse represents daily energy statistics
+type EnergyDailyStatisticResponse struct {
+	Daily []EnergyDailyStat `json:"daily"`
+}
+
+// EnergyDailyStat represents a daily energy statistic
+type EnergyDailyStat struct {
+	Date        string `json:"date"`
+	EnergyUsage int64  `json:"energy_usage"`
+	EnergyFee   int64  `json:"energy_fee"`
+}
+
+// FreezeResourceResponse represents freeze resource response
+type FreezeResourceResponse struct {
+	Frozen     []FrozenRecord    `json:"frozen"`
+	Delegated  []DelegatedRecord `json:"delegated"`
+}
+
+// FrozenRecord represents a frozen record
+type FrozenRecord struct {
+	Amount   int64  `json:"amount"`
+	ExpireAt int64  `json:"expire_at"`
+	Type     string `json:"type"`
+}
+
+// DelegatedRecord represents a delegated record
+type DelegatedRecord struct {
+	From     string `json:"from"`
+	To       string `json:"to"`
+	Amount   int64  `json:"amount"`
+	ExpireAt int64  `json:"expire_at"`
+	Type     string `json:"type"`
+}
+
+// TurnoverResponse represents turnover response
+type TurnoverResponse struct {
+	Total int64           `json:"total"`
+	Daily []DailyTurnover `json:"daily"`
+}
+
+// DailyTurnover represents daily turnover
+type DailyTurnover struct {
+	Date     string `json:"date"`
+	Turnover int64  `json:"turnover"`
+}
+
+// LindHolderResponse represents LIND holders response
+type LindHolderResponse struct {
+	Holders []LindHolder `json:"holders"`
+	Total   int64        `json:"total"`
+}
+
+// LindHolder represents a LIND holder
+type LindHolder struct {
+	Address string `json:"address"`
+	Balance int64  `json:"balance"`
+	Rank    int    `json:"rank"`
+}
+
+// TokenPriceResponse represents token price response
+type TokenPriceResponse struct {
+	Price     float64 `json:"price"`
+	Change24h float64 `json:"change_24h"`
+	Volume24h float64 `json:"volume_24h"`
+	MarketCap float64 `json:"market_cap"`
+}
+
+// ================================================================
+
+// TokenPositionResponse represents token position distribution
+type TokenPositionResponse struct {
+	Addresses []TokenPosition `json:"addresses"`
+}
+
+type TokenPosition struct {
+	Address    string  `json:"address"`
+	Balance    string  `json:"balance"`
+	Percentage float64 `json:"percentage"`
+	Rank       int     `json:"rank"`
+}
+
+// WinkFundResponse represents WINK fund information
+type WinkFundResponse struct {
+	Total       int64 `json:"total"`
+	Burned      int64 `json:"burned"`
+	Circulating int64 `json:"circulating"`
+}
+
+// JSTFundResponse represents JST fund information
+type JSTFundResponse struct {
+	Total       int64 `json:"total"`
+	Burned      int64 `json:"burned"`
+	Circulating int64 `json:"circulating"`
+}
+
+// GraphicResponse represents graphic data
+type GraphicResponse struct {
+	Labels []string  `json:"labels"`
+	Data   []float64 `json:"data"`
+}
+
+// ==================== JSON-RPC API Responses ====================
 type JsonRpcResponse struct {
 	JsonRPC string          `json:"jsonrpc"`
 	ID      int             `json:"id"`
@@ -724,7 +759,6 @@ type JsonRpcLog struct {
 }
 
 // ==================== Event Query API Responses ====================
-
 type EventTransactionResponse struct {
 	ID              string `json:"id"`
 	BlockNumber     int64  `json:"blockNumber"`
@@ -821,7 +855,6 @@ type ContractWithAbiResponse struct {
 }
 
 // ==================== Lindascan Custom API Responses ====================
-
 type HomepageBundleResponse struct {
 	TotalBlocks        int64                 `json:"totalBlocks"`
 	TotalTransactions  int64                 `json:"totalTransactions"`
@@ -889,7 +922,7 @@ type SearchResult struct {
 	Description string `json:"description"`
 }
 
-// PaginationMeta represents pagination metadata for API responses
+// ==================== Pagination Meta ====================
 type PaginationMeta struct {
 	At          int64  `json:"at"`
 	PageSize    int    `json:"page_size"`
@@ -897,408 +930,6 @@ type PaginationMeta struct {
 	Links       *Links `json:"links,omitempty"`
 }
 
-// Links represents pagination links for API responses
 type Links struct {
 	Next string `json:"next,omitempty"`
-}
-
-// ==================== Request Models ====================
-
-type PaginationRequest struct {
-	Limit       int    `json:"limit" form:"limit" default:"20"`
-	Start       int    `json:"start" form:"start" default:"0"`
-	Fingerprint string `json:"fingerprint" form:"fingerprint"`
-	Sort        string `json:"sort" form:"sort" default:"-timestamp"`
-}
-
-type AccountListRequest struct {
-	PaginationRequest
-	Address string `json:"address" form:"address"`
-}
-
-type AccountResourceRequest struct {
-	Address string `json:"address" form:"address" binding:"required"`
-}
-
-type AccountOverviewRequest struct {
-	Type string `json:"type" form:"type"` // lindHolder, etc.
-}
-
-type AccountProposalRequest struct {
-	Address string `json:"address" form:"address"`
-	PaginationRequest
-}
-
-type TokenListRequest struct {
-	PaginationRequest
-	ID       string `json:"id" form:"id"`
-	Contract string `json:"contract" form:"contract"`
-	ShowAll  bool   `json:"showAll" form:"showAll"`
-	Fields   string `json:"fields" form:"fields"`
-	Filter   string `json:"filter" form:"filter"` // lrc20, lrc10
-}
-
-type LRC20TokenRequest struct {
-	PaginationRequest
-	Contract string `json:"contract" form:"contract"`
-}
-
-type LRC20TokenByContractRequest struct {
-	Contract string `uri:"contract" binding:"required"`
-}
-
-type TokenHoldersRequest struct {
-	PaginationRequest
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	Format   string `json:"format" form:"format"` // json, csv
-}
-
-type TokenTransfersRequest struct {
-	PaginationRequest
-	Contract string `json:"contract" form:"contract"`
-	From     string `json:"from" form:"from"`
-	To       string `json:"to" form:"to"`
-}
-
-type ParticipateAssetIssueRequest struct {
-	PaginationRequest
-}
-
-type TagRequest struct {
-	PaginationRequest
-	Address string `json:"address" form:"address"`
-}
-
-type TagInsertRequest struct {
-	Address     string `json:"address" binding:"required"`
-	Tag         string `json:"tag" binding:"required"`
-	Description string `json:"description"`
-	Owner       string `json:"owner" binding:"required"`
-	Signature   string `json:"signature" binding:"required"`
-}
-
-type TagUpdateRequest struct {
-	ID          int32  `json:"id" binding:"required"`
-	Tag         string `json:"tag"`
-	Description string `json:"description"`
-	Signature   string `json:"signature" binding:"required"`
-}
-
-type TagDeleteRequest struct {
-	ID        int32  `json:"id" binding:"required"`
-	Signature string `json:"signature" binding:"required"`
-}
-
-type TagRecommendRequest struct {
-	Address string `json:"address" form:"address"`
-	Limit   int    `json:"limit" form:"limit" default:"10"`
-}
-
-type SearchRequest struct {
-	Query string `json:"query" form:"query" binding:"required"`
-	Type  string `json:"type" form:"type"`
-}
-
-type LedgerRequest struct {
-	Type  string `json:"type" form:"type" binding:"required"` // token10, exchange
-	PaginationRequest
-}
-
-type FundRequest struct {
-	PaginationRequest
-}
-
-type TestnetRequest struct {
-	Address string `json:"address" binding:"required"`
-	Amount  int64  `json:"amount" binding:"required"`
-}
-
-type CSVExportRequest struct {
-	Type   string `json:"type" form:"type" binding:"required"` // block, freezeresource, turnover, tokenholders
-	Format string `json:"format" form:"format" default:"csv"`
-	PaginationRequest
-}
-
-type MonitorRequest struct {
-	Event     string `json:"event" binding:"required"`
-	Address   string `json:"address"`
-	Timestamp int64  `json:"timestamp"`
-	Data      json.RawMessage `json:"data"`
-}
-
-type UploadLogoRequest struct {
-	Address string `json:"address" binding:"required"`
-	Logo    string `json:"logo" binding:"required"` // base64 encoded image
-}
-
-type UploadLogoResponse struct {
-	Success bool   `json:"success"`
-	URL     string `json:"url,omitempty"`
-	Message string `json:"message,omitempty"`
-}
-
-type ProxyRequestMessage struct {
-	Method  string            `json:"method"`
-	URL     string            `json:"url"`
-	Headers map[string]string `json:"headers"`
-	Body    json.RawMessage   `json:"body"`
-}
-
-type ProxyResponse struct {
-	StatusCode int               `json:"status_code"`
-	Headers    map[string]string `json:"headers"`
-	Body       json.RawMessage   `json:"body"`
-}
-
-type TokenPriceResponse struct {
-	Price     float64 `json:"price"`
-	Change24h float64 `json:"change_24h"`
-	Volume24h float64 `json:"volume_24h"`
-	MarketCap float64 `json:"market_cap"`
-}
-
-type WinkFundResponse struct {
-	Total     int64  `json:"total"`
-	Burned    int64  `json:"burned"`
-	Circulating int64 `json:"circulating"`
-}
-
-type JSTFundResponse struct {
-	Total     int64  `json:"total"`
-	Burned    int64  `json:"burned"`
-	Circulating int64 `json:"circulating"`
-}
-
-type GraphicResponse struct {
-	Labels []string  `json:"labels"`
-	Data   []float64 `json:"data"`
-}
-
-type TokenPositionRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	Limit    int    `json:"limit" form:"limit" default:"100"`
-}
-
-type TokenPositionResponse struct {
-	Address         string  `json:"address"`
-	Balance         string  `json:"balance"`
-	Percentage      float64 `json:"percentage"`
-	Rank            int     `json:"rank"`
-}
-
-type AssetTransferRequest struct {
-	AssetName string `json:"asset_name" form:"asset_name"`
-	PaginationRequest
-}
-
-type AssetTransferResponse struct {
-	Transfers []TokenTransferResponse `json:"transfers"`
-	Total     int64                   `json:"total"`
-}
-
-type EnergyStatisticRequest struct {
-	Address string `json:"address" form:"address" binding:"required"`
-	From    int64  `json:"from" form:"from"`
-	To      int64  `json:"to" form:"to"`
-}
-
-type EnergyStatisticResponse struct {
-	Address string `json:"address"`
-	Total   int64  `json:"total"`
-	Daily   []DailyStat `json:"daily"`
-}
-
-type DailyStat struct {
-	Date  string `json:"date"`
-	Value int64  `json:"value"`
-}
-
-type TriggerStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type TriggerStatisticResponse struct {
-	Contract string `json:"contract"`
-	Count    int64  `json:"count"`
-	Daily    []DailyStat `json:"daily"`
-}
-
-type CallerAddressStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type CallerAddressStatisticResponse struct {
-	Contract string `json:"contract"`
-	Callers  []CallerStat `json:"callers"`
-}
-
-type CallerStat struct {
-	Address string `json:"address"`
-	Count   int64  `json:"count"`
-}
-
-type EnergyDailyStatisticRequest struct {
-	From int64 `json:"from" form:"from"`
-	To   int64 `json:"to" form:"to"`
-}
-
-type EnergyDailyStatisticResponse struct {
-	Daily []EnergyDailyStat `json:"daily"`
-}
-
-type EnergyDailyStat struct {
-	Date        string `json:"date"`
-	EnergyUsage int64  `json:"energy_usage"`
-	EnergyFee   int64  `json:"energy_fee"`
-}
-
-type TriggerAmountStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type TriggerAmountStatisticResponse struct {
-	Contract string      `json:"contract"`
-	Triggers []TriggerStat `json:"triggers"`
-}
-
-type TriggerStat struct {
-	TxID    string `json:"tx_id"`
-	Amount  int64  `json:"amount"`
-	Address string `json:"address"`
-}
-
-type FreezeResourceRequest struct {
-	Address string `json:"address" form:"address" binding:"required"`
-	Type    string `json:"type" form:"type"` // bandwidth, energy
-}
-
-type FreezeResourceResponse struct {
-	Frozen     []FrozenRecord `json:"frozen"`
-	Delegated  []DelegatedRecord `json:"delegated"`
-}
-
-type FrozenRecord struct {
-	Amount   int64  `json:"amount"`
-	ExpireAt int64  `json:"expire_at"`
-	Type     string `json:"type"`
-}
-
-type DelegatedRecord struct {
-	From     string `json:"from"`
-	To       string `json:"to"`
-	Amount   int64  `json:"amount"`
-	ExpireAt int64  `json:"expire_at"`
-	Type     string `json:"type"`
-}
-
-type TurnoverRequest struct {
-	From int64 `json:"from" form:"from"`
-	To   int64 `json:"to" form:"to"`
-}
-
-type TurnoverResponse struct {
-	Total   int64 `json:"total"`
-	Daily   []DailyTurnover `json:"daily"`
-}
-
-type DailyTurnover struct {
-	Date    string `json:"date"`
-	Turnover int64 `json:"turnover"`
-}
-
-type LindHolderRequest struct {
-	PaginationRequest
-}
-
-type LindHolderResponse struct {
-	Holders []LindHolder `json:"holders"`
-	Total   int64        `json:"total"`
-}
-
-type LindHolder struct {
-	Address string `json:"address"`
-	Balance int64  `json:"balance"`
-	Rank    int    `json:"rank"`
-}
-
-type OneContractEnergyStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type OneContractEnergyStatisticResponse struct {
-	Contract string `json:"contract"`
-	Total    int64  `json:"total"`
-	Daily    []DailyStat `json:"daily"`
-}
-
-type OneContractTriggerStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type OneContractTriggerStatisticResponse struct {
-	Contract string `json:"contract"`
-	Count    int64  `json:"count"`
-	Daily    []DailyStat `json:"daily"`
-}
-
-type OneContractCallerStatisticRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	From     int64  `json:"from" form:"from"`
-	To       int64  `json:"to" form:"to"`
-}
-
-type OneContractCallerStatisticResponse struct {
-	Contract string `json:"contract"`
-	Callers  []CallerStat `json:"callers"`
-}
-
-type OneContractCallersRequest struct {
-	Contract string `json:"contract" form:"contract" binding:"required"`
-	PaginationRequest
-}
-
-type OneContractCallersResponse struct {
-	Callers []CallerDetail `json:"callers"`
-	Total   int64          `json:"total"`
-}
-
-type CallerDetail struct {
-	Address string `json:"address"`
-	Count   int64  `json:"count"`
-	FirstTx string `json:"first_tx"`
-	LastTx  string `json:"last_tx"`
-}
-
-type NodeOverviewRequest struct {
-	Address string `json:"address" binding:"required"`
-}
-
-type NodeOverviewResponse struct {
-	Uptime      int64   `json:"uptime"`
-	BlockHeight int64   `json:"block_height"`
-	Peers       int     `json:"peers"`
-	Version     string  `json:"version"`
-}
-
-type NodeInfoUploadRequest struct {
-	Address     string `json:"address" binding:"required"`
-	Version     string `json:"version"`
-	Location    string `json:"location"`
-	BlockHeight int64  `json:"block_height"`
-	Peers       int    `json:"peers"`
-}
-
-type NodeInfoUploadResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
 }

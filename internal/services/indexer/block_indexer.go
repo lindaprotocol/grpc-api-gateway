@@ -1,3 +1,4 @@
+// internal/services/indexer/block_indexer.go
 package indexer
 
 import (
@@ -114,22 +115,36 @@ func (bi *BlockIndexer) CalculateBlockStats(block *lindapb.Block) *models.BlockS
 
 // calculateBlockSize calculates the approximate size of a block
 func calculateBlockSize(block *lindapb.Block) int {
-	// This is a simplified calculation
-	size := 0
-	size += len(block.BlockID)
-	if block.BlockHeader != nil {
-		size += len(block.BlockHeader.WitnessSignature)
-		if block.BlockHeader.RawData != nil {
-			size += len(block.BlockHeader.RawData.TxTrieRoot)
-			size += len(block.BlockHeader.RawData.ParentHash)
-			size += len(block.BlockHeader.RawData.WitnessAddress)
-			size += len(block.BlockHeader.RawData.AccountStateRoot)
-		}
-	}
-	for _, tx := range block.Transactions {
-		size += len(tx.TxID)
-		size += len(tx.RawDataHex)
-		size += len(tx.Signature) * 65 // Approximate signature size
-	}
-	return size
+    // This is a simplified calculation
+    size := 0
+    size += len(block.BlockID)
+    if block.BlockHeader != nil {
+        size += len(block.BlockHeader.WitnessSignature)
+        if block.BlockHeader.RawData != nil {
+            size += len(block.BlockHeader.RawData.TxTrieRoot)
+            size += len(block.BlockHeader.RawData.ParentHash)
+            size += len(block.BlockHeader.RawData.WitnessAddress)
+            size += len(block.BlockHeader.RawData.AccountStateRoot)
+        }
+    }
+    for _, tx := range block.Transactions {
+        size += len(tx.TxID)
+        if tx.RawData != nil {
+            // Add size of raw data fields
+            size += len(tx.RawData.Data)      // This is the data field
+            size += len(tx.RawData.Scripts)
+            // Add size of contracts
+            for _, contract := range tx.RawData.Contract {
+                // Estimate contract size
+                size += len(contract.Provider)
+                size += len(contract.ContractName)
+                // Add size of parameter if it exists
+                if contract.Parameter != nil {
+                    size += len(contract.Parameter.Value)
+                }
+            }
+        }
+        size += len(tx.Signature) * 65 // Approximate signature size
+    }
+    return size
 }

@@ -1,3 +1,4 @@
+// internal/services/indexer/transaction_indexer.go
 package indexer
 
 import (
@@ -22,11 +23,15 @@ func NewTransactionIndexer(indexer *Indexer) *TransactionIndexer {
 
 // IndexTransaction indexes a single transaction
 func (ti *TransactionIndexer) IndexTransaction(ctx context.Context, tx *lindapb.Transaction, blockNum int64, blockTimestamp int64) error {
+	// Get the hex representation of raw data
+	rawDataHex := utils.GetTransactionRawHex(tx)
+
 	txModel := &models.Transaction{
 		Hash:           string(tx.TxID),
 		BlockNumber:    blockNum,
 		BlockTimestamp: blockTimestamp,
-		RawData:        string(tx.RawDataHex),
+		RawData:        string(tx.RawDataHex), // Keep the original
+		RawDataHex:     rawDataHex,             // Store the hex version
 		Signature:      tx.Signature,
 		CreatedAt:      time.Now(),
 	}
