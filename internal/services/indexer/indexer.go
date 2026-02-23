@@ -1,3 +1,4 @@
+// internal/services/indexer/indexer.go
 package indexer
 
 import (
@@ -12,26 +13,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Indexer struct: Main indexer service
 type Indexer struct {
-	config          *config.IndexerConfig
+	config           *config.IndexerConfig
 	blockchainClient *blockchain.Client
-	blockRepo       *repository.BlockRepository
-	txRepo          *repository.TransactionRepository
-	tokenRepo       *repository.TokenRepository
-	eventRepo       *repository.EventRepository
-	statsRepo       *repository.StatsRepository
+	blockRepo        *repository.BlockRepository
+	txRepo           *repository.TransactionRepository
+	tokenRepo        *repository.TokenRepository
+	eventRepo        *repository.EventRepository
+	statsRepo        *repository.StatsRepository
 	
-	logger          *logrus.Logger
-	stopChan        chan struct{}
-	wg              sync.WaitGroup
-	currentBlock    int64
-
+	logger           *logrus.Logger
+	stopChan         chan struct{}
+	wg               sync.WaitGroup
+	currentBlock     int64
+	
+	// Indexer components
 	blockIndexer     *BlockIndexer
 	txIndexer        *TransactionIndexer
-	tokenIndexer     *TokenIndexer     
+	tokenIndexer     *TokenIndexer
 	eventIndexer     *EventIndexer
 }
 
+// NewIndexer creates a new indexer instance
 func NewIndexer(
 	cfg *config.IndexerConfig,
 	client *blockchain.Client,
@@ -41,28 +45,29 @@ func NewIndexer(
 	eventRepo *repository.EventRepository,
 	statsRepo *repository.StatsRepository,
 ) *Indexer {
-	return &Indexer{
-		config:          cfg,
+	idx := &Indexer{
+		config:           cfg,
 		blockchainClient: client,
-		blockRepo:       blockRepo,
-		txRepo:          txRepo,
-		tokenRepo:       tokenRepo,
-		eventRepo:       eventRepo,
-		statsRepo:       statsRepo,
-		logger:          logrus.New(),
-		stopChan:        make(chan struct{}),
-		currentBlock:    0,
+		blockRepo:        blockRepo,
+		txRepo:           txRepo,
+		tokenRepo:        tokenRepo,
+		eventRepo:        eventRepo,
+		statsRepo:        statsRepo,
+		logger:           logrus.New(),
+		stopChan:         make(chan struct{}),
+		currentBlock:     0,
 	}
-
+	
 	// Initialize indexers
 	idx.blockIndexer = NewBlockIndexer(idx)
 	idx.txIndexer = NewTransactionIndexer(idx)
-	idx.tokenIndexer = NewTokenIndexer(idx)    // Add this line
+	idx.tokenIndexer = NewTokenIndexer(idx)
 	idx.eventIndexer = NewEventIndexer(idx)
 	
 	return idx
 }
 
+// Start begins the indexing process
 func (i *Indexer) Start() error {
 	i.logger.Info("Starting blockchain indexer")
 	
@@ -97,6 +102,7 @@ func (i *Indexer) Start() error {
 	return nil
 }
 
+// Stop halts the indexing process
 func (i *Indexer) Stop() error {
 	i.logger.Info("Stopping blockchain indexer")
 	close(i.stopChan)
@@ -124,7 +130,7 @@ func (i *Indexer) sync() {
 	ctx := context.Background()
 
 	// Get latest block
-	nowBlock, err := i.blockchainClient.GetNowBlock(ctx, nil)
+	nowBlock, err := i.blockchainClient.GetNowBlock(ctx, &lindapb.EmptyMessage{})
 	if err != nil {
 		i.logger.WithError(err).Error("Failed to get now block")
 		return
@@ -192,13 +198,13 @@ func (i *Indexer) syncBlock(ctx context.Context, blockNum int64) error {
 	}
 
 	// Index block
-	if err := i.indexBlock(blockSolidity); err != nil {
+	if err := i.blockIndexer.IndexBlock(blockSolidity); err != nil {
 		return err
 	}
 
 	// Index transactions
 	for _, tx := range blockSolidity.Transactions {
-		if err := i.indexTransaction(ctx, tx, blockNum); err != nil {
+		if err := i.txIndexer.IndexTransaction(ctx, tx, blockNum); err != nil {
 			i.logger.WithError(err).WithField("tx", string(tx.TxID)).Error("Failed to index transaction")
 		}
 	}
@@ -209,50 +215,16 @@ func (i *Indexer) syncBlock(ctx context.Context, blockNum int64) error {
 	})
 	if err == nil {
 		for _, info := range txInfos.TransactionInfo {
-			if err := i.indexTransactionInfo(info); err != nil {
+			if err := i.txIndexer.IndexTransactionInfo(info); err != nil {
 				i.logger.WithError(err).Error("Failed to index transaction info")
+			}
+			
+			// Index events from transaction info
+			if err := i.eventIndexer.IndexEvents(ctx, nil, info, blockSolidity); err != nil {
+				i.logger.WithError(err).Error("Failed to index events")
 			}
 		}
 	}
 
 	return nil
-}
-
-func (i *Indexer) indexBlock(block *lindapb.Block) error {
-	blockModel := &models.Block{
-		Number:           block.BlockHeader.RawData.Number,
-		Hash:             string(block.BlockID),
-		ParentHash:       string(block.BlockHeader.RawData.ParentHash),
-		Timestamp:        block.BlockHeader.RawData.Timestamp,
-		WitnessAddress:   string(block.BlockHeader.RawData.WitnessAddress),
-		WitnessID:        int(block.BlockHeader.RawData.WitnessId),
-		TxTrieRoot:       string(block.BlockHeader.RawData.TxTrieRoot),
-		TransactionCount: len(block.Transactions),
-		Size:             0, // Would need actual size
-		Version:          int(block.BlockHeader.RawData.Version),
-	}
-
-	return i.blockRepo.SaveBlock(blockModel)
-}
-
-func (i *Indexer) indexTransaction(ctx context.Context, tx *lindapb.Transaction, blockNum int64) error {
-	txModel := &models.Transaction{
-		Hash:          string(tx.TxID),
-		BlockNumber:   blockNum,
-		RawData:       string(tx.RawDataHex),
-		Signature:     tx.Signature,
-	}
-
-	// Parse from address and to address
-	if len(tx.RawData.Contract) > 0 {
-		// Parse contract based on type
-		// This is simplified - actual implementation would handle different contract types
-	}
-
-	return i.txRepo.SaveTransaction(txModel)
-}
-
-func (i *Indexer) indexTransactionInfo(info *lindapb.TransactionInfo) error {
-	// Update transaction with info
-	return i.txRepo.UpdateTransactionWithInfo(info)
 }

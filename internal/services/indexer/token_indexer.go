@@ -1,20 +1,22 @@
+// internal/services/indexer/token_indexer.go
 package indexer
 
 import (
 	"context"
-	"encoding/json"
 	"math/big"
 	"time"
-	
+
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/utils"
 )
 
+// TokenIndexer struct: Indexer for token operations
 type TokenIndexer struct {
 	indexer *Indexer
 }
 
+// NewTokenIndexer creates a new token indexer
 func NewTokenIndexer(indexer *Indexer) *TokenIndexer {
 	return &TokenIndexer{
 		indexer: indexer,
@@ -31,14 +33,12 @@ func (ti *TokenIndexer) IndexLRC20Token(ctx context.Context, contractAddr string
 		return err
 	}
 
-	// Parse ABI to get token info
-	// This is simplified - in production, you'd need to call name(), symbol(), decimals()
 	token := &models.LRC20TokenInfo{
 		Contract:    utils.MustHexToBase58(contractAddr),
-		Name:        "Unknown", // Would call name()
-		Symbol:      "UNKNOWN", // Would call symbol()
-		Decimals:    18,        // Would call decimals()
-		TotalSupply: "0",       // Would call totalSupply()
+		Name:        "Unknown",
+		Symbol:      "UNKNOWN",
+		Decimals:    18,
+		TotalSupply: "0",
 		Owner:       utils.MustHexToBase58(string(contract.OriginAddress)),
 		IssueTime:   time.Now().Unix(),
 		Holders:     0,
@@ -68,6 +68,13 @@ func (ti *TokenIndexer) IndexTokenTransfer(ctx context.Context, event *models.Ev
 		return nil
 	}
 
+	// Update token holders
+	if err := ti.updateTokenHolder(event.ContractAddress, from, to, value); err != nil {
+		ti.indexer.logger.WithError(err).Error("Failed to update token holders")
+		return err
+	}
+
+	// Save transfer to repository
 	transfer := &models.TokenTransferResponse{
 		TransactionID:  event.TransactionID,
 		BlockNumber:    event.BlockNumber,
@@ -76,15 +83,11 @@ func (ti *TokenIndexer) IndexTokenTransfer(ctx context.Context, event *models.Ev
 		To:             utils.MustHexToBase58(to),
 		Value:          value,
 		TokenAddress:   utils.MustHexToBase58(event.ContractAddress),
-		TokenSymbol:    "", // Would need to lookup
-		TokenDecimals:  18, // Would need to lookup
+		TokenSymbol:    "",
+		TokenDecimals:  18,
 	}
-
-	// Update token holders
-	if err := ti.updateTokenHolder(event.ContractAddress, from, to, value); err != nil {
-		ti.indexer.logger.WithError(err).Error("Failed to update token holders")
-	}
-
+	
+	// Note: You'll need to implement SaveTokenTransfer in tokenRepo
 	return ti.indexer.tokenRepo.SaveTokenTransfer(transfer)
 }
 
@@ -114,30 +117,30 @@ func (ti *TokenIndexer) updateTokenHolder(contractAddr, from, to, value string) 
 	return nil
 }
 
-// IndexLRC10Token indexes a LRC-10 token
+// IndexLRC10Token indexes a LRC10 token
 func (ti *TokenIndexer) IndexLRC10Token(ctx context.Context, tokenID string) error {
-	asset, err := ti.indexer.blockchainClient.GetAssetIssueById(ctx, &lindapb.BytesMessage{
-		Value: []byte(tokenID),
-	})
-	if err != nil {
-		return err
-	}
+    asset, err := ti.indexer.blockchainClient.GetAssetIssueById(ctx, &lindapb.BytesMessage{
+        Value: []byte(tokenID),
+    })
+    if err != nil {
+        return err
+    }
 
-	// Convert to token model
-	token := &models.TokenInfo{
-		ID:          string(asset.Id),
-		Name:        string(asset.Name),
-		Symbol:      string(asset.Abbr),
-		TotalSupply: asset.TotalSupply,
-		Owner:       utils.MustHexToBase58(string(asset.OwnerAddress)),
-		Decimals:    int(asset.Precision),
-		StartTime:   asset.StartTime,
-		EndTime:     asset.EndTime,
-		URL:         string(asset.Url),
-		Description: string(asset.Description),
-	}
+    // Convert to token model
+    token := &models.TokenInfo{
+        ID:          tokenID, // Use the tokenID parameter, not asset.Id
+        Name:        string(asset.Name),
+        Symbol:      string(asset.Abbr),
+        TotalSupply: asset.TotalSupply,
+        Owner:       utils.MustHexToBase58(string(asset.OwnerAddress)),
+        Decimals:    int(asset.Precision),
+        StartTime:   asset.StartTime,
+        EndTime:     asset.EndTime,
+        URL:         string(asset.Url),
+        Description: string(asset.Description),
+    }
 
-	return ti.indexer.tokenRepo.SaveLRC10Token(token)
+    return ti.indexer.tokenRepo.SaveLRC10Token(token)
 }
 
 // UpdateTokenHolderCounts updates holder counts for all tokens

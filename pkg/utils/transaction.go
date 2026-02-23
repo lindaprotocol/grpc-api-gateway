@@ -85,6 +85,8 @@ func GetTransactionSize(tx *lindapb.Transaction) int {
 	for _, ret := range tx.Ret {
 		size += 8 // Fee is int64
 		size += 4 // Ret code enum
+		// If you need to access ret fields, do it here
+		_ = ret // This tells Go you're intentionally not using it
 	}
 
 	return size

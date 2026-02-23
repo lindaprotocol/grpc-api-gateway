@@ -3,13 +3,13 @@ package indexer
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"math/big"
 
-	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/internal/services/event"
+	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
 	"github.com/lindaprotocol/grpc-api-gateway/pkg/lindapb"
+	"github.com/lindaprotocol/grpc-api-gateway/pkg/utils"
 )
 
 type EventIndexer struct {
