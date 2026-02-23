@@ -1,7 +1,6 @@
 package utils
 
 import (
-    "time"
     "crypto/sha256"
     "encoding/hex"
     "errors"

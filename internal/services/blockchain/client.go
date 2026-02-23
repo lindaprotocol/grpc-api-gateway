@@ -259,7 +259,7 @@ func (c *Client) GetContract(ctx context.Context, req *lindapb.BytesMessage) (*l
 	return c.fullnodeClient.GetContract(ctx, req)
 }
 
-func (c *Client) ValidateAddress(ctx context.Context, req *lindapb.Address) (*lindapb.AddressValidateResponse, error) {
+func (c *Client) ValidateAddress(ctx context.Context, req *lindapb.AddressMessage) (*lindapb.AddressValidateResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.config.GRPCTimeout)
 	defer cancel()
 	return c.fullnodeClient.ValidateAddress(ctx, req)

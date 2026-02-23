@@ -506,7 +506,7 @@ func (c *FullNodeClient) GetTriggerInputForShieldedLRC20Contract(ctx context.Con
 }
 
 // Utility methods
-func (c *FullNodeClient) ValidateAddress(ctx context.Context, req *lindapb.Address) (*lindapb.AddressValidateResponse, error) {
+func (c *FullNodeClient) ValidateAddress(ctx context.Context, req *lindapb.AddressMessage) (*lindapb.AddressValidateResponse, error) {
 	return c.client.ValidateAddress(ctx, req)
 }
 

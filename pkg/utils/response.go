@@ -234,22 +234,22 @@ func GetCurrentTimestamp() int64 {
 }
 
 // ParsePaginationParams parses pagination parameters from request
-func ParsePaginationParams(c *gin.Context) (limit, offset int, sort string, fingerprint string) {
-	limit, _ = strconv.Atoi(c.DefaultQuery("limit", "20"))
-	if limit <= 0 || limit > 200 {
-		limit = 20
-	}
+// func ParsePaginationParams(c *gin.Context) (limit, offset int, sort string, fingerprint string) {
+// 	limit, _ = strconv.Atoi(c.DefaultQuery("limit", "20"))
+// 	if limit <= 0 || limit > 200 {
+// 		limit = 20
+// 	}
 
-	offset, _ = strconv.Atoi(c.DefaultQuery("offset", "0"))
-	if offset < 0 {
-		offset = 0
-	}
+// 	offset, _ = strconv.Atoi(c.DefaultQuery("offset", "0"))
+// 	if offset < 0 {
+// 		offset = 0
+// 	}
 
-	sort = c.DefaultQuery("sort", "-timestamp")
-	fingerprint = c.Query("fingerprint")
+// 	sort = c.DefaultQuery("sort", "-timestamp")
+// 	fingerprint = c.Query("fingerprint")
 
-	return limit, offset, sort, fingerprint
-}
+// 	return limit, offset, sort, fingerprint
+// }
 
 // ParseV1PaginationParams parses v1 style pagination parameters
 func ParseV1PaginationParams(c *gin.Context) (limit, start int, sort string, fingerprint string) {
