@@ -3,6 +3,9 @@ package models
 
 import "encoding/json"
 
+// JSON is a type alias for json.RawMessage
+// type JSON json.RawMessage
+
 // ==================== Account API Responses ====================
 type AccountResponse struct {
 	Address            string                 `json:"address"`
@@ -52,7 +55,7 @@ type TransactionResponse struct {
 	EnergyUsageTotal  int64                    `json:"energy_usage_total,omitempty"`
 	NetFee            int64                    `json:"net_fee,omitempty"`
 	NetUsage          int64                    `json:"net_usage,omitempty"`
-	InternalTransactions []*InternalTransaction `json:"internal_transactions,omitempty"`
+	InternalTransactions []*InternalTransactionResponse `json:"internal_transactions,omitempty"`
 	FeeLimit          int64                    `json:"fee_limit,omitempty"`
 	RefBlockBytes     string                   `json:"ref_block_bytes,omitempty"`
 	RefBlockHash      string                   `json:"ref_block_hash,omitempty"`
@@ -91,18 +94,20 @@ type AccountID struct {
 	Address string `json:"address,omitempty"`
 }
 
-type InternalTransaction struct {
+// InternalTransactionData represents the data of an internal transaction in API responses
+type InternalTransactionData struct {
+	Note     string `json:"note"`
+	Rejected bool   `json:"rejected"`
+}
+
+// InternalTransactionResponse is the API response for internal transactions
+type InternalTransactionResponse struct {
 	InternalTxID    string                 `json:"internal_tx_id"`
 	Data            *InternalTransactionData `json:"data"`
 	BlockTimestamp  int64                   `json:"block_timestamp"`
 	ToAddress       string                   `json:"to_address"`
 	TxID            string                   `json:"tx_id"`
 	FromAddress     string                   `json:"from_address"`
-}
-
-type InternalTransactionData struct {
-	Note     string `json:"note"`
-	Rejected bool   `json:"rejected"`
 }
 
 // ==================== TransactionInfo API Responses ====================
@@ -120,7 +125,7 @@ type TransactionInfoResponse struct {
 	AssetIssueID              string                  `json:"assetIssueID,omitempty"`
 	WithdrawAmount            int64                   `json:"withdraw_amount,omitempty"`
 	UnfreezeAmount            int64                   `json:"unfreeze_amount,omitempty"`
-	InternalTransactions      []*InternalTransaction   `json:"internal_transactions,omitempty"`
+	InternalTransactions      []*InternalTransactionResponse   `json:"internal_transactions,omitempty"`
 	WithdrawExpireAmount      int64                   `json:"withdraw_expire_amount,omitempty"`
 	CancelUnfreezeV2Amount    map[string]int64        `json:"cancel_unfreezeV2_amount,omitempty"`
 	ExchangeReceivedAmount    int64                   `json:"exchange_received_amount,omitempty"`

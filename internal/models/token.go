@@ -60,3 +60,41 @@ type TokenTransfer struct {
 	TokenDecimals  int32     `json:"token_decimals"`
 	CreatedAt      time.Time `json:"created_at"`
 }
+
+// TokenTransferDB represents a token transfer database model
+type TokenTransferDB struct {
+	ID              uint      `gorm:"primarykey" json:"-"`
+	TransactionID   string    `gorm:"index;type:varchar(64)" json:"transaction_id"`
+	BlockNumber     int64     `gorm:"index" json:"block_number"`
+	BlockTimestamp  int64     `gorm:"index" json:"block_timestamp"`
+	From            string    `gorm:"index;type:varchar(42)" json:"from"`
+	To              string    `gorm:"index;type:varchar(42)" json:"to"`
+	Value           string    `gorm:"type:varchar(100)" json:"value"`
+	TokenAddress    string    `gorm:"index;type:varchar(42)" json:"token_address"`
+	TokenSymbol     string    `gorm:"type:varchar(20)" json:"token_symbol"`
+	TokenDecimals   int32     `json:"token_decimals"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+// AssetIssueDB represents an asset issue database model
+type AssetIssueDB struct {
+	ID                       string         `gorm:"primaryKey;type:varchar(100)" json:"id"`
+	OwnerAddress             string         `gorm:"type:varchar(42)" json:"owner_address"`
+	Name                     string         `gorm:"type:varchar(100)" json:"name"`
+	Abbr                     string         `gorm:"type:varchar(20)" json:"abbr"`
+	TotalSupply              int64          `json:"total_supply"`
+	FrozenSupply             JSON           `gorm:"type:jsonb" json:"frozen_supply"` // Store as JSON
+	LindNum                  int32          `json:"lind_num"`
+	Num                      int32          `json:"num"`
+	Precision                int32          `json:"precision"`
+	StartTime                int64          `json:"start_time"`
+	EndTime                  int64          `json:"end_time"`
+	VoteScore                int32          `json:"vote_score"`
+	Description              string         `gorm:"type:text" json:"description"`
+	URL                      string         `gorm:"type:text" json:"url"`
+	FreeAssetNetLimit        int64          `json:"free_asset_net_limit"`
+	PublicFreeAssetNetLimit  int64          `json:"public_free_asset_net_limit"`
+	PublicFreeAssetNetUsage  int64          `json:"public_free_asset_net_usage"`
+	PublicLatestFreeNetTime  int64          `json:"public_latest_free_net_time"`
+	CreatedAt                time.Time      `json:"created_at"`
+}

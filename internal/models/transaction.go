@@ -9,7 +9,7 @@ import (
 )
 
 // JSON is a type alias for json.RawMessage
-type JSON json.RawMessage
+// type JSON json.RawMessage
 
 // Transaction represents a blockchain transaction database model
 type Transaction struct {
@@ -35,30 +35,25 @@ type Transaction struct {
 	CreatedAt       time.Time `json:"created_at"`
 }
 
-// CallValueInfo represents token transfer information in internal transactions
+// CallValueInfo represents token transfer information in internal transactions (for database storage)
 type CallValueInfo struct {
 	CallValue int64  `json:"callValue,omitempty"`
 	TokenID   string `json:"tokenId,omitempty"`
 }
 
-// VoteInfo represents voting information in internal transactions
-type VoteInfo struct {
-	VoteAddress string `json:"vote_address"`
-	VoteCount   int64  `json:"vote_count"`
-}
-
-// InternalTransaction represents an internal transaction triggered during smart contract execution
+// InternalTransaction represents an internal transaction database model
+// This matches the structure from the Linda blockchain API
 type InternalTransaction struct {
-	Hash            string          `gorm:"primaryKey;type:varchar(64)" json:"hash"`
-	CallerAddress   string          `gorm:"index;type:varchar(42)" json:"caller_address"`
-	TransferToAddress string        `gorm:"index;type:varchar(42)" json:"transferTo_address"`
-	CallValueInfo   []CallValueInfo `gorm:"type:jsonb" json:"callValueInfo"`
-	Note            string          `gorm:"type:text" json:"note"` // Hex string that decodes to instruction type
-	Rejected        bool            `json:"rejected"`
-	Extra           JSON            `gorm:"type:jsonb" json:"extra,omitempty"` // For voting details and other extra info
-	BlockTimestamp  int64           `gorm:"index" json:"block_timestamp"`
-	TransactionID   string          `gorm:"index;type:varchar(64)" json:"transaction_id"` // Parent transaction ID
-	CreatedAt       time.Time       `json:"created_at"`
+	Hash              string          `gorm:"primaryKey;type:varchar(64)" json:"hash"`
+	CallerAddress     string          `gorm:"index;type:varchar(42)" json:"caller_address"`
+	TransferToAddress string          `gorm:"index;type:varchar(42)" json:"transferTo_address"`
+	CallValueInfo     []CallValueInfo `gorm:"type:jsonb" json:"callValueInfo"`
+	Note              string          `gorm:"type:text" json:"note"` // Hex string that decodes to instruction type
+	Rejected          bool            `json:"rejected"`
+	Extra             JSON            `gorm:"type:jsonb" json:"extra,omitempty"` // For voting details and other extra info
+	BlockTimestamp    int64           `gorm:"index" json:"block_timestamp"`
+	TransactionID     string          `gorm:"index;type:varchar(64)" json:"transaction_id"` // Parent transaction ID
+	CreatedAt         time.Time       `json:"created_at"`
 }
 
 // CallValueInfoWrapper implements sql.Scanner and driver.Valuer for CallValueInfo slice
@@ -90,19 +85,6 @@ func (c CallValueInfoWrapper) Value() (driver.Value, error) {
 		return nil, nil
 	}
 	return json.Marshal(c)
-}
-
-// InternalTransactionResponse is the API response for internal transactions
-type InternalTransactionResponse struct {
-	Hash            string          `json:"hash"`
-	CallerAddress   string          `json:"caller_address"`
-	TransferToAddress string        `json:"transferTo_address"`
-	CallValueInfo   []CallValueInfo `json:"callValueInfo"`
-	Note            string          `json:"note"`
-	Rejected        bool            `json:"rejected"`
-	Extra           JSON            `json:"extra,omitempty"`
-	BlockTimestamp  int64           `json:"block_timestamp"`
-	TransactionID   string          `json:"transaction_id"`
 }
 
 // Note: The note field is stored as hex string in the database

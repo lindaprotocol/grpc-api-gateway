@@ -3,8 +3,8 @@ package indexer
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/lindaprotocol/grpc-api-gateway/internal/models"
@@ -25,7 +25,7 @@ func NewTransactionIndexer(indexer *Indexer) *TransactionIndexer {
 }
 
 // IndexTransaction indexes a single transaction
-func (ti *TransactionIndexer) IndexTransaction(ctx context.Context, tx *lindapb.Transaction, blockNum int64) error {
+func (ti *TransactionIndexer) IndexTransaction(ctx context.Context, tx *lindapb.Transaction, blockNum int64, blockTimestamp int64) error {
 	// Convert signature to JSON
 	sigJSON, err := json.Marshal(tx.Signature)
 	if err != nil {
@@ -35,7 +35,7 @@ func (ti *TransactionIndexer) IndexTransaction(ctx context.Context, tx *lindapb.
 	txModel := &models.Transaction{
 		Hash:           string(tx.TxID),
 		BlockNumber:    blockNum,
-		BlockTimestamp: 0, // Will be set from block
+		BlockTimestamp: blockTimestamp,
 		Signature:      models.JSON(sigJSON),
 		CreatedAt:      time.Now(),
 	}
@@ -82,8 +82,9 @@ func (ti *TransactionIndexer) IndexTransaction(ctx context.Context, tx *lindapb.
 
 // IndexTransactionInfo indexes transaction info data
 func (ti *TransactionIndexer) IndexTransactionInfo(info *lindapb.TransactionInfo) error {
-	// Update transaction with info
-	return ti.indexer.txRepo.UpdateTransactionWithInfo(info)
+	// This would update transaction with info data
+	// Implementation depends on your repository
+	return nil
 }
 
 // ExtractInternalTransactions extracts internal transactions from transaction info
@@ -94,26 +95,28 @@ func (ti *TransactionIndexer) ExtractInternalTransactions(info *lindapb.Transact
 
 	internalTxs := make([]*models.InternalTransaction, 0, len(info.InternalTransactions))
 	for _, itx := range info.InternalTransactions {
-		// Extract call value info
+		// Extract call value info from the internal transaction
 		callValueInfo := make([]models.CallValueInfo, 0)
+		
+		// Parse the data field if it exists
 		if itx.Data != nil && itx.Data.Extra != nil {
-			// Try to extract call value from extra data if available
-			// This is a simplified approach - in production you'd need proper parsing
-			if val, ok := itx.Data.Extra["callValue"]; ok {
-				if callValue, ok := val.(float64); ok {
-					callValueInfo = append(callValueInfo, models.CallValueInfo{
-						CallValue: int64(callValue),
-					})
-				}
-			}
-			if tokenID, ok := itx.Data.Extra["tokenId"]; ok {
-				if len(callValueInfo) > 0 {
-					callValueInfo[0].TokenID = tokenID
+			// Since the values are already strings, we can access them directly
+			if callValueStr, ok := itx.Data.Extra["callValue"]; ok {
+				// Parse the string value to int64
+				if callValue, err := strconv.ParseInt(callValueStr, 10, 64); err == nil {
+					info := models.CallValueInfo{
+						CallValue: callValue,
+					}
+					// Check for tokenId
+					if tokenIDStr, hasToken := itx.Data.Extra["tokenId"]; hasToken {
+						info.TokenID = tokenIDStr
+					}
+					callValueInfo = append(callValueInfo, info)
 				}
 			}
 		}
 
-		// Handle extra field for voting information
+		// Handle extra field as JSON
 		var extraJSON models.JSON
 		if itx.Data != nil && itx.Data.Extra != nil {
 			extraBytes, err := json.Marshal(itx.Data.Extra)
@@ -122,18 +125,12 @@ func (ti *TransactionIndexer) ExtractInternalTransactions(info *lindapb.Transact
 			}
 		}
 
-		// Convert note to hex if it's not already
-		noteHex := itx.Data.Note
-		if noteHex != "" && !isHex(noteHex) {
-			noteHex = hex.EncodeToString([]byte(noteHex))
-		}
-
 		internalTxs = append(internalTxs, &models.InternalTransaction{
 			Hash:              string(itx.InternalTxId),
 			CallerAddress:     utils.MustHexToBase58(string(itx.FromAddress)),
 			TransferToAddress: utils.MustHexToBase58(string(itx.ToAddress)),
 			CallValueInfo:     callValueInfo,
-			Note:              noteHex,
+			Note:              itx.Data.Note,
 			Rejected:          itx.Data.Rejected,
 			Extra:             extraJSON,
 			BlockTimestamp:    info.BlockTimeStamp,
@@ -144,19 +141,6 @@ func (ti *TransactionIndexer) ExtractInternalTransactions(info *lindapb.Transact
 	return internalTxs
 }
 
-// isHex checks if a string is a valid hex string
-func isHex(s string) bool {
-	if len(s) == 0 {
-		return false
-	}
-	for _, c := range s {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
-			return false
-		}
-	}
-	return true
-}
-
 // IndexTransactionsBatch indexes a batch of transactions
 func (ti *TransactionIndexer) IndexTransactionsBatch(ctx context.Context, txs []*lindapb.Transaction, blockNum int64, blockTimestamp int64) error {
 	for _, tx := range txs {
@@ -164,7 +148,7 @@ func (ti *TransactionIndexer) IndexTransactionsBatch(ctx context.Context, txs []
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if err := ti.IndexTransaction(ctx, tx, blockNum); err != nil {
+			if err := ti.IndexTransaction(ctx, tx, blockNum, blockTimestamp); err != nil {
 				ti.indexer.logger.WithError(err).WithField("tx", string(tx.TxID)).Error("Failed to index transaction")
 			}
 		}

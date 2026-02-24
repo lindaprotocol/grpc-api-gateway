@@ -179,6 +179,7 @@ func (i *Indexer) syncBlockRange(ctx context.Context, start, end int64) error {
 	return nil
 }
 
+// syncBlock fetches and indexes a single block
 func (i *Indexer) syncBlock(ctx context.Context, blockNum int64) error {
 	// Get block from full node
 	block, err := i.blockchainClient.GetBlockByNum(ctx, &lindapb.NumberMessage{
@@ -202,9 +203,13 @@ func (i *Indexer) syncBlock(ctx context.Context, blockNum int64) error {
 		return err
 	}
 
+	// Get block timestamp
+	blockTimestamp := blockSolidity.BlockHeader.RawData.Timestamp
+
 	// Index transactions
 	for _, tx := range blockSolidity.Transactions {
-		if err := i.txIndexer.IndexTransaction(ctx, tx, blockNum); err != nil {
+		// FIX: Add blockTimestamp as the 4th argument
+		if err := i.txIndexer.IndexTransaction(ctx, tx, blockNum, blockTimestamp); err != nil {
 			i.logger.WithError(err).WithField("tx", string(tx.TxID)).Error("Failed to index transaction")
 		}
 	}

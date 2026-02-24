@@ -71,11 +71,13 @@ func autoMigrate(db *gorm.DB) error {
 
 	// Token related tables
 	if err := db.AutoMigrate(
-		&models.TokenInfo{},
-		&models.LRC20TokenInfo{},
-		&models.TokenHolder{},
-		&models.TokenTransferResponse{},
-		&models.AssetIssueResponse{},
+		&models.TokenInfo{},           // LRC-10 token database model
+		&models.LRC20TokenInfo{},       // LRC20 token database model
+		&models.TokenHolder{},          // Token holder database model
+		&models.TokenTransferDB{},       // Token transfer database model AssetIssueDB
+		&models.AssetIssueDB{},         // Asset issue database model
+		// &models.TokenTransferResponse{}, // NULL THIS - it's an API response type
+		// &models.AssetIssueResponse{},   // NULL THIS - it's an API response type
 	); err != nil {
 		return err
 	}
