@@ -3,6 +3,7 @@ package indexer
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"time"
 
@@ -91,29 +92,69 @@ func (ti *TransactionIndexer) ExtractInternalTransactions(info *lindapb.Transact
 		return nil
 	}
 
-	internalTxs := make([]*models.InternalTransaction, len(info.InternalTransactions))
-	for i, itx := range info.InternalTransactions {
-		internalTxs[i] = &models.InternalTransaction{
-			InternalTxID:    string(itx.InternalTxId),
-			Data:            convertInternalTransactionData(itx.Data),
-			BlockTimestamp:  info.BlockTimeStamp,
-			ToAddress:       utils.MustHexToBase58(string(itx.ToAddress)),
-			TxID:            string(info.Id),
-			FromAddress:     utils.MustHexToBase58(string(itx.FromAddress)),
+	internalTxs := make([]*models.InternalTransaction, 0, len(info.InternalTransactions))
+	for _, itx := range info.InternalTransactions {
+		// Extract call value info
+		callValueInfo := make([]models.CallValueInfo, 0)
+		if itx.Data != nil && itx.Data.Extra != nil {
+			// Try to extract call value from extra data if available
+			// This is a simplified approach - in production you'd need proper parsing
+			if val, ok := itx.Data.Extra["callValue"]; ok {
+				if callValue, ok := val.(float64); ok {
+					callValueInfo = append(callValueInfo, models.CallValueInfo{
+						CallValue: int64(callValue),
+					})
+				}
+			}
+			if tokenID, ok := itx.Data.Extra["tokenId"]; ok {
+				if len(callValueInfo) > 0 {
+					callValueInfo[0].TokenID = tokenID
+				}
+			}
 		}
+
+		// Handle extra field for voting information
+		var extraJSON models.JSON
+		if itx.Data != nil && itx.Data.Extra != nil {
+			extraBytes, err := json.Marshal(itx.Data.Extra)
+			if err == nil {
+				extraJSON = models.JSON(extraBytes)
+			}
+		}
+
+		// Convert note to hex if it's not already
+		noteHex := itx.Data.Note
+		if noteHex != "" && !isHex(noteHex) {
+			noteHex = hex.EncodeToString([]byte(noteHex))
+		}
+
+		internalTxs = append(internalTxs, &models.InternalTransaction{
+			Hash:              string(itx.InternalTxId),
+			CallerAddress:     utils.MustHexToBase58(string(itx.FromAddress)),
+			TransferToAddress: utils.MustHexToBase58(string(itx.ToAddress)),
+			CallValueInfo:     callValueInfo,
+			Note:              noteHex,
+			Rejected:          itx.Data.Rejected,
+			Extra:             extraJSON,
+			BlockTimestamp:    info.BlockTimeStamp,
+			TransactionID:     string(info.Id),
+			CreatedAt:         time.Now(),
+		})
 	}
 	return internalTxs
 }
 
-// convertInternalTransactionData converts protobuf internal transaction data to model
-func convertInternalTransactionData(data *lindapb.InternalTransactionData) *models.InternalTransactionData {
-	if data == nil {
-		return nil
+// isHex checks if a string is a valid hex string
+func isHex(s string) bool {
+	if len(s) == 0 {
+		return false
 	}
-	return &models.InternalTransactionData{
-		Note:     data.Note,
-		Rejected: data.Rejected,
+	for _, c := range s {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
 	}
+	return true
 }
 
 // IndexTransactionsBatch indexes a batch of transactions
